@@ -1,41 +1,68 @@
-PsychoNotes
+# PsychoNotes 🧠
 
-Простой и удобный инструмент для практикующих психологов, разработанный для облегчения составления и систематизации клиентской базы, а также ведения стандартизированных заметок по сеансам. Забудьте о бумажных записях и ручной организации — PsychoNotes поможет вам сосредоточиться на работе с клиентами, а не на бюрократии.
+**Cross-platform CRM & Session Management System for Psychologists**
 
-Зачем нужен PsychoNotes?
-Ведение клиентской базы и заметок о сеансах — неотъемлемая часть работы психолога. Однако ручное ведение записей может быть трудоемким и неэффективным. PsychoNotes решает эти проблемы, предлагая:
+PsychoNotes is a specialized tool designed to streamline the workflow of practicing psychologists. It replaces fragmented paper notes with a unified, secure, and structured local database. Built with a focus on data privacy and professional stability.
 
-Систематизацию данных: Все клиентские карточки и заметки хранятся в одной локальной базе данных, легкодоступной для поиска.
-Стандартизацию заметок: Используйте предопределенные шаблоны для структурированного ведения записей о сеансах, обеспечивая полноту и последовательность информации.
-Быстрый доступ: Мгновенный поиск клиентов по имени позволяет быстро найти нужную информацию.
-Основные возможности
-Карточки клиентов: Ведение детальной информации о каждом клиенте.
-Заметки о сеансах: Добавление стандартизированных заметок к каждому сеансу с использованием предустановленных шаблонов.
-Локальная база данных: Вся информация хранится непосредственно на вашем устройстве с использованием SQLite, обеспечивая контроль над вашими данными.
-Поиск по имени: Быстрый поиск клиентов по их именам через удобную строку поиска.
-Технологии
-Проект PsychoNotes разработан на:
+---
 
-Python: Основной язык программирования.
-Kivy: Фреймворк для создания кроссплатформенного графического пользовательского интерфейса.
-SQLite: Легковесная встроенная база данных для хранения клиентских данных и заметок.
-x86 архитектура: Приложение оптимизировано для работы на 32-битных и 64-битных системах.
-Android: отдельная версия приложения в виде установочного APK файла.
-Установка и запуск:
-Проект поставляется как готовое к использованию приложение для Windows, собранное с помощью pyinstaller. Вам не потребуется устанавливать Python или какие-либо дополнительные библиотеки.
+### ✨ Detailed Feature Set
 
-Скачайте архив с приложением в Releases
-Распакуйте архив в удобное для вас место.
-Запустите исполняемый файл PsychologistNotes.exe
+* **Advanced Client CRM:**
+    * **Psychological Profiling:** Dedicated fields for temperament, character type, and perception styles allow for a deeper understanding of the client's personality structure.
+    * **Anamnesis & Help Plan:** Specialized modules for long-term therapy planning and tracking historical background.
+    * **Dynamic Request Management:** A flexible UI implementation that allows adding or removing multiple therapy requests on-the-fly without database conflicts.
+* **Scientific Session Tracking:**
+    * **Quantifiable Progress:** Use of initial and final state scores (0-10) to visually track therapeutic efficacy over time.
+    * **Standardized Templates:** Pre-defined fields for "Meeting Location", "Weather" (environmental context), "Techniques used", and "Outcomes" to ensure no detail is missed.
+* **Data Integrity & Security:**
+    * **SQLite Backend:** Relational data mapping ensures that deleting a client safely handles all associated session notes.
+    * **Instant Search:** Optimized lookup by full name, enabling quick navigation through large client bases.
+    * **Total Privacy:** Zero cloud dependency. All sensitive data remains on the professional's device, fulfilling ethical requirements for data confidentiality.
 
-На Android установить APK пакет.
+### ⚙️ Technical Deep Dive
 
-Будущее проекта
-Мы постоянно работаем над улучшением PsychoNotes. В планах:
+**1. Cross-Platform Engine (Kivy & Buildozer)**
+The application utilizes the **Kivy** framework for hardware-accelerated graphics (OpenGL ES 2).
+* **Buildozer Pipeline:** Specifically configured to handle Android permissions and packaging `sqlite3` binaries within the APK.
+* **Adaptive Metrics:** Implementation of `kivy.metrics.dp` ensures the UI scales gracefully from a 6.7" smartphone to a desktop monitor.
 
-Обновление пользовательского интерфейса: Приложение станет еще более красивым и интуитивно понятным.
-Гибкие шаблоны: Возможность редактировать и создавать собственные шаблоны для заметок о сеансах.
-Обратная связь и вклад
-Если у вас есть вопросы, предложения или вы обнаружили ошибку, пожалуйста, создайте Issue в этом репозитории.
+**2. Database Architecture**
+The system follows a relational model implemented in **SQLite**. 
+* **Joins & Queries:** History screens utilize complex SQL JOINs to fetch client names alongside session data, optimizing memory usage.
+* **Resource Handling:** Custom logic to detect `sys.frozen` state (PyInstaller) to correctly locate `.kv` UI files and the database path in compiled environments.
 
-Надеемся, PsychoNotes значительно облегчит вашу профессиональную деятельность!
+**3. UI/UX Logic**
+* **Screen Management:** A robust `ScreenManager` implementation ensures smooth transitions and state persistence between the Client List and Session Notes.
+* **Reactive Inputs:** Real-time data binding between Python properties (`StringProperty`, `NumericProperty`) and Kivy Language (`.kv`) files.
+
+---
+
+### 🛠 Technology Stack
+
+* **Core:** Python 3.x
+* **UI:** Kivy Framework (KV Language)
+* **Database:** SQLite
+* **Deployment:** Buildozer (Android APK), PyInstaller (Windows EXE)
+
+---
+
+### 🚀 Getting Started
+
+#### Windows
+1. Download the latest archive from the **Releases** section.
+2. Unpack and run `PsychologistNotes.exe`.
+
+#### Android
+1. Download the `.apk` file from the **Releases** section.
+2. Install it on your device (enable "Install from unknown sources").
+
+---
+
+### 📈 Future Roadmap
+* **Modern Aesthetic:** Transitioning to a "pastel professional" UI theme.
+* **Custom Templates:** User-defined session note structures.
+* **Data Export:** Exporting client history to PDF/Excel.
+
+---
+*Developed by Efim Romanchenko (efrom-K) — bridging the gap between stable code and professional practice.*
