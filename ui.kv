@@ -1,0 +1,1602 @@
+#:import Window kivy.core.window.Window
+#:import human_date fmt.human_date
+#:import initials fmt.initials
+#:set ICON_FONT 'assets/icons.otf'
+#:set I {'home': '', 'group': '', 'history': '', 'settings': '', 'add': '', 'back': '', 'edit': '', 'delete': '', 'search': '', 'calendar': '', 'left': '', 'right': '', 'close': '', 'dark': '', 'light': '', 'event': '', 'person': '', 'place': '', 'restore': '', 'schedule': '', 'table': '', 'trend': '', 'sun': '', 'psychology': '', 'calm': '', 'insights': '', 'backup': '', 'sparkle': '', 'check': ''}
+#:set MAXW dp(720)
+
+
+# ================= typography =================
+
+<Icon@Label>:
+    icon: ''
+    text: I.get(self.icon, '')
+    font_name: ICON_FONT
+    font_size: sp(22)
+    color: app.text
+    size_hint: None, None
+    size: dp(24), dp(24)
+    pos_hint: {'center_y': .5}
+
+<Text@Label>:
+    color: app.text
+    font_size: sp(16)
+    line_height: 1.2
+    text_size: self.width, None
+    size_hint_y: None
+    height: self.texture_size[1]
+
+<Muted@Text>:
+    color: app.muted
+    font_size: sp(14)
+
+<Heading@Text>:
+    font_size: sp(30)
+    bold: True
+
+<SectionTitle@Text>:
+    font_size: sp(18)
+    bold: True
+    padding: 0, dp(10), 0, 0
+
+<Cell@Label>:
+    color: app.text
+    font_size: sp(16)
+    text_size: self.size
+    halign: 'left'
+    valign: 'middle'
+    shorten: True
+    shorten_from: 'right'
+
+
+# ================= surfaces =================
+
+# Frosted glass panel: soft shadow, milky fill, grain, top highlight, bright rim.
+<Glass>:
+    radius: dp(22)
+    fill: app.glass
+    canvas.before:
+        Color:
+            rgba: app.shadow
+        BoxShadow:
+            pos: self.pos
+            size: self.size
+            offset: 0, -dp(6)
+            blur_radius: dp(26)
+            spread_radius: -dp(4), -dp(4)
+            border_radius: [self.radius or 0] * 4
+        Color:
+            rgba: self.fill or (0, 0, 0, 0)
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [self.radius or 0]
+        Color:
+            rgba: 1, 1, 1, (.03 if app.theme == 'dark' else .025)
+        RoundedRectangle:  # grain, 1:1 region of a big noise texture
+            texture: app.grain.get_region(0, 0, min(int(self.width), 1024), min(int(self.height), 1024)) if app.grain else None
+            pos: self.pos
+            size: self.size
+            radius: [self.radius or 0]
+        Color:
+            rgba: 1, 1, 1, (.04 if app.theme == 'dark' else .2)
+        RoundedRectangle:
+            texture: app.sheen
+            pos: self.x, self.y + self.height * .45
+            size: self.width, self.height * .55
+            radius: [(self.radius or 0), (self.radius or 0), 0, 0]
+        Color:
+            rgba: app.stroke
+        Line:
+            rounded_rectangle: self.x, self.y, self.width, self.height, (self.radius or 1)
+            width: 1
+
+<Card@Glass>:
+    orientation: 'vertical'
+    size_hint_y: None
+    height: self.minimum_height
+    padding: dp(18)
+    spacing: dp(12)
+
+<InfoCard@Card>:
+    title: ''
+    text: ''
+    spacing: dp(6)
+    height: self.minimum_height if self.text else 0
+    opacity: 1 if self.text else 0
+    Muted:
+        text: root.title
+        bold: True
+    Text:
+        text: root.text
+
+# A numbered form section: "1  Встреча" + hint, fields go below
+<Step@Card>:
+    num: ''
+    title: ''
+    hint: ''
+    spacing: dp(14)
+    BoxLayout:
+        size_hint_y: None
+        height: dp(32)
+        spacing: dp(12)
+        Label:
+            text: root.num
+            color: app.ink
+            bold: True
+            font_size: sp(15)
+            size_hint: None, None
+            size: dp(32), dp(32)
+            canvas.before:
+                Color:
+                    rgba: app.accent_fill
+                Ellipse:
+                    pos: self.pos
+                    size: self.size
+        Cell:
+            text: root.title
+            bold: True
+            font_size: sp(18)
+    Muted:
+        text: root.hint
+        height: self.texture_size[1] if root.hint else 0
+
+# Card header with an icon: "[icon] Резервные копии"
+<CardTitle@BoxLayout>:
+    icon: ''
+    text: ''
+    size_hint_y: None
+    height: dp(32)
+    spacing: dp(10)
+    Icon:
+        icon: root.icon
+        color: app.accent
+    Cell:
+        text: root.text
+        bold: True
+        font_size: sp(18)
+
+<Scroller@ScrollView>:
+    do_scroll_x: False
+    bar_width: dp(4)
+    bar_color: app.muted[:3] + [.5]
+    bar_inactive_color: app.muted[:3] + [.15]
+    scroll_wheel_distance: dp(60)
+
+# centred column, max 720dp wide, room at the bottom for the floating nav and button
+<Content@BoxLayout>:
+    orientation: 'vertical'
+    size_hint_y: None
+    height: self.minimum_height
+    spacing: dp(14)
+    padding: max(dp(16), (self.width - MAXW) / 2), dp(8), max(dp(16), (self.width - MAXW) / 2), dp(170)
+
+<Header@BoxLayout>:
+    orientation: 'vertical'
+    size_hint_y: None
+    height: self.minimum_height
+    spacing: dp(12)
+    padding: max(dp(16), (self.width - MAXW) / 2), dp(24), max(dp(16), (self.width - MAXW) / 2), dp(12)
+
+<List@BoxLayout>:
+    orientation: 'vertical'
+    size_hint_y: None
+    height: self.minimum_height
+    spacing: dp(10)
+
+<Labeled@BoxLayout>:
+    label: ''
+    orientation: 'vertical'
+    size_hint_y: None
+    height: self.minimum_height
+    spacing: dp(8)
+    Muted:
+        text: root.label
+
+<Spacer@Widget>:
+    size_hint_y: None
+    height: dp(8)
+
+
+# ================= controls =================
+
+<Btn@ButtonBehavior+BoxLayout>:
+    text: ''
+    icon: ''
+    bg: app.accent_fill
+    fg: app.ink
+    size_hint_y: None
+    height: dp(52)
+    padding: dp(16), 0
+    spacing: dp(8) if self.icon else 0
+    canvas.before:
+        Color:
+            rgba: self.bg or (0, 0, 0, 0)
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [dp(16)]
+        Color:
+            rgba: 1, 1, 1, (.3 if self.bg and self.bg[3] > .5 and app.theme == 'light' else 0)
+        RoundedRectangle:
+            texture: app.sheen
+            pos: self.x, self.y + self.height * .4
+            size: self.width, self.height * .6
+            radius: [dp(16), dp(16), 0, 0]
+        Color:
+            rgba: 0, 0, 0, (.1 if self.state == 'down' else 0)
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [dp(16)]
+    Widget:
+    Icon:
+        icon: root.icon
+        color: root.fg or (0, 0, 0, 1)
+        font_size: sp(20)
+        width: dp(22) if root.icon else 0
+    Label:
+        text: root.text
+        color: root.fg or (0, 0, 0, 1)
+        bold: True
+        font_size: sp(16)
+        size_hint_x: None
+        width: self.texture_size[0]
+    Widget:
+
+<SoftBtn@Btn>:
+    bg: app.accent_soft
+    fg: app.accent
+
+<DangerBtn@Btn>:
+    bg: app.danger_soft
+    fg: app.danger
+
+<GhostBtn@Btn>:
+    bg: 0, 0, 0, 0
+    fg: app.accent
+    height: dp(42)
+
+<Fab@ButtonBehavior+BoxLayout>:
+    icon: 'add'
+    text: ''
+    size_hint: None, None
+    height: dp(56)
+    width: self.minimum_width
+    padding: dp(18), 0, dp(22), 0
+    spacing: dp(8)
+    pos: self.parent.width - self.width - dp(16) if self.parent else 0, dp(98)
+    canvas.before:
+        Color:
+            rgba: app.shadow[:3] + [app.shadow[3] * 2.5]
+        BoxShadow:
+            pos: self.pos
+            size: self.size
+            offset: 0, -dp(4)
+            blur_radius: dp(18)
+            border_radius: [dp(20)] * 4
+        Color:
+            rgba: app.accent_fill
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [dp(20)]
+        Color:
+            rgba: 1, 1, 1, (.35 if app.theme == 'light' else .1)
+        RoundedRectangle:
+            texture: app.sheen
+            pos: self.x, self.y + self.height * .4
+            size: self.width, self.height * .6
+            radius: [dp(20), dp(20), 0, 0]
+        Color:
+            rgba: 0, 0, 0, (.1 if self.state == 'down' else 0)
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [dp(20)]
+    Icon:
+        icon: root.icon
+        color: app.ink
+    Label:
+        text: root.text
+        color: app.ink
+        bold: True
+        font_size: sp(16)
+        size_hint_x: None
+        width: self.texture_size[0]
+
+<IconBtn@ButtonBehavior+Label>:
+    icon: ''
+    text: I.get(self.icon, '')
+    font_name: ICON_FONT
+    font_size: sp(24)
+    color: app.text
+    size_hint: None, None
+    size: dp(46), dp(46)
+    canvas.before:
+        Color:
+            rgba: app.text[:3] + [.08 if self.state == 'down' else 0]
+        Ellipse:
+            pos: self.pos
+            size: self.size
+
+<Field@TextInput>:
+    background_normal: ''
+    background_active: ''
+    background_color: 0, 0, 0, 0
+    foreground_color: app.text
+    hint_text_color: app.muted[:3] + [.8]
+    cursor_color: app.accent
+    selection_color: app.accent[:3] + [.3]
+    font_size: sp(16)
+    padding: dp(14), dp(14)
+    write_tab: False
+    multiline: False
+    size_hint_y: None
+    height: max(dp(52), self.minimum_height)
+    canvas.before:
+        Color:
+            rgba: app.surface2
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [dp(14)]
+        Color:
+            rgba: app.accent if self.focus else (0, 0, 0, 0)
+        Line:
+            rounded_rectangle: self.x, self.y, self.width, self.height, dp(14)
+            width: 1.3
+        # TextInput draws its text with the last Color set here
+        Color:
+            rgba: self.foreground_color if self.text else self.hint_text_color
+
+<Area@Field>:
+    multiline: True
+    height: max(dp(96), self.minimum_height)
+
+<SearchField@RelativeLayout>:
+    hint: ''
+    text: field.text
+    size_hint_y: None
+    height: dp(52)
+    Field:
+        id: field
+        hint_text: root.hint
+        size_hint_y: 1
+        padding: dp(46), dp(15), dp(14), dp(15)
+    Icon:
+        icon: 'search'
+        color: app.muted
+        pos_hint: {}
+        pos: dp(14), (root.height - self.height) / 2
+
+<SelectBox@ButtonBehavior+BoxLayout>:
+    text: ''
+    icon: ''
+    placeholder: False
+    size_hint_y: None
+    height: dp(52)
+    padding: dp(14), 0
+    spacing: dp(10)
+    canvas.before:
+        Color:
+            rgba: app.surface2
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [dp(14)]
+        Color:
+            rgba: 0, 0, 0, (.06 if self.state == 'down' else 0)
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [dp(14)]
+    Icon:
+        icon: root.icon
+        color: app.accent
+        font_size: sp(20)
+    Cell:
+        text: root.text
+        color: app.muted if root.placeholder else app.text
+
+<Chip@ButtonBehavior+Label>:
+    active: False
+    color: app.ink if self.active else app.text
+    bold: self.active
+    font_size: sp(15)
+    size_hint: None, None
+    size: self.texture_size[0] + dp(30), dp(40)
+    canvas.before:
+        Color:
+            rgba: app.accent_fill if self.active else app.surface2
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [dp(20)]
+
+<ChipGroup>:
+    size_hint_y: None
+    height: self.minimum_height
+    spacing: dp(8)
+
+<Tag@Label>:
+    color: app.accent
+    font_size: sp(14)
+    size_hint: None, None
+    size: (self.texture_size[0] + dp(24), dp(32)) if self.text else (0, 0)
+    opacity: 1 if self.text else 0
+    canvas.before:
+        Color:
+            rgba: app.accent_soft
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [dp(16)]
+
+<TagBox@StackLayout>:
+    size_hint_y: None
+    height: self.minimum_height
+    spacing: dp(6)
+
+# tone: good / bad / flat / warn / '' (hidden)
+<Badge@Label>:
+    tone: ''
+    color: app.ink
+    bold: True
+    font_size: sp(14)
+    size_hint: None, None
+    size: (max(dp(44), self.texture_size[0] + dp(20)) if self.text else 0), dp(30)
+    pos_hint: {'center_y': .5}
+    canvas.before:
+        Color:
+            rgba: {'good': app.score_high, 'bad': app.score_low, 'warn': app.score_mid}.get(self.tone, app.surface2)
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [dp(15)]
+
+<ScorePill@ButtonBehavior+Label>:
+    active: False
+    tint: app.score_low if int(self.text or 0) <= 3 else (app.score_mid if int(self.text or 0) <= 6 else app.score_high)
+    color: app.ink if self.active else app.text
+    font_size: sp(15) if self.active else sp(14)
+    bold: self.active
+    canvas.before:
+        Color:
+            rgba: (self.tint if self.active else self.tint[:3] + [.35]) if self.tint else (0, 0, 0, 0)
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [dp(10)]
+        Color:
+            rgba: app.ink[:3] + [.5 if self.active else 0]
+        Line:
+            rounded_rectangle: self.x, self.y, self.width, self.height, dp(10)
+            width: 1.2
+
+<ScoreSelector>:
+    size_hint_y: None
+    height: dp(44)
+    spacing: dp(4)
+
+<ScaleHints@BoxLayout>:
+    size_hint_y: None
+    height: dp(18)
+    Label:
+        text: 'плохо'
+        color: app.muted
+        font_size: sp(12)
+        text_size: self.size
+        halign: 'left'
+    Label:
+        text: 'отлично'
+        color: app.muted
+        font_size: sp(12)
+        text_size: self.size
+        halign: 'right'
+
+# pastel circle; hue picked from the initials so each client keeps a colour
+<Avatar@Label>:
+    size_hint: None, None
+    size: dp(46), dp(46)
+    color: app.ink
+    bold: True
+    font_size: sp(16)
+    pos_hint: {'center_y': .5}
+    canvas.before:
+        Color:
+            rgba: [app.tint1, app.tint2, app.tint3, app.tint4][sum(map(ord, self.text)) % 4][:3] + [1]
+        Ellipse:
+            pos: self.pos
+            size: self.size
+
+<LegendDot@Widget>:
+    c: 0, 0, 0, 1
+    size_hint: None, None
+    size: dp(10), dp(10)
+    pos_hint: {'center_y': .5}
+    canvas:
+        Color:
+            rgba: self.c or (0, 0, 0, 0)
+        Ellipse:
+            pos: self.pos
+            size: self.size
+
+<LegendLabel@Label>:
+    color: app.muted
+    font_size: sp(13)
+    size_hint_x: None
+    width: self.texture_size[0]
+
+
+# ================= list rows =================
+
+<RowBase@ButtonBehavior+Glass>:
+    radius: dp(20)
+    size_hint_y: None
+    height: dp(72)
+    padding: dp(12), dp(10), dp(14), dp(10)
+    spacing: dp(12)
+    canvas.before:
+        Color:
+            rgba: app.text[:3] + [.05 if self.state == 'down' else 0]
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [dp(20)]
+
+<ClientRow@RowBase>:
+    client_id: 0
+    name: ''
+    initials: ''
+    subtitle: ''
+    on_release: app.go('client', client_id=self.client_id)
+    Avatar:
+        text: root.initials
+    BoxLayout:
+        orientation: 'vertical'
+        Cell:
+            text: root.name
+            bold: True
+        Cell:
+            text: root.subtitle
+            color: app.muted
+            font_size: sp(14)
+    Icon:
+        icon: 'right'
+        color: app.muted
+
+<SessionRow@RowBase>:
+    note_id: 0
+    day: ''
+    mon: ''
+    title: ''
+    subtitle: ''
+    badge: ''
+    tone: ''
+    target: 'session'
+    on_release: app.go(self.target, note_id=self.note_id)
+    BoxLayout:
+        orientation: 'vertical'
+        size_hint_x: None
+        width: dp(48)
+        padding: 0, dp(5)
+        canvas.before:
+            Color:
+                rgba: app.accent_soft
+            RoundedRectangle:
+                pos: self.pos
+                size: self.size
+                radius: [dp(14)]
+        Label:
+            text: root.day
+            color: app.accent
+            bold: True
+            font_size: sp(18)
+        Label:
+            text: root.mon
+            color: app.accent
+            font_size: sp(12)
+    BoxLayout:
+        orientation: 'vertical'
+        Cell:
+            text: root.title
+            bold: True
+        Cell:
+            text: root.subtitle
+            color: app.muted
+            font_size: sp(14)
+    Badge:
+        text: root.badge
+        tone: root.tone
+
+<MonthHeader@Label>:
+    color: app.muted
+    bold: True
+    font_size: sp(14)
+    text_size: self.size
+    halign: 'left'
+    valign: 'bottom'
+    padding: dp(4), dp(6)
+
+<PickRow@RowBase>:
+    text: ''
+    initials: ''
+    height: dp(58)
+    fill: app.surface2
+    Avatar:
+        text: root.initials
+        size: (dp(38), dp(38)) if root.initials else (0, 0)
+        opacity: 1 if root.initials else 0
+    Cell:
+        text: root.text
+
+<RequestRow@BoxLayout>:
+    size_hint_y: None
+    height: dp(52)
+    spacing: dp(6)
+    Field:
+        id: field
+        hint_text: 'Например: тревога на работе'
+    IconBtn:
+        id: remove_btn
+        icon: 'close'
+        color: app.muted
+        pos_hint: {'center_y': .5}
+
+<StatTile@Glass>:
+    value: ''
+    label: ''
+    orientation: 'vertical'
+    padding: dp(14), dp(12)
+    Label:
+        text: root.value
+        color: app.text
+        bold: True
+        font_size: sp(28)
+        text_size: self.size
+        halign: 'left'
+        valign: 'bottom'
+    Label:
+        text: root.label
+        color: app.muted
+        font_size: sp(13)
+        text_size: self.size
+        halign: 'left'
+        valign: 'top'
+        size_hint_y: .8
+
+<ScoreBox@BoxLayout>:
+    label: ''
+    score: '—'
+    note: ''
+    c: 0, 0, 0, 1
+    orientation: 'vertical'
+    size_hint_y: None
+    height: self.minimum_height
+    padding: dp(14), dp(12)
+    spacing: dp(4)
+    canvas.before:
+        Color:
+            rgba: app.surface2
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [dp(16)]
+    BoxLayout:
+        size_hint_y: None
+        height: dp(18)
+        spacing: dp(6)
+        LegendDot:
+            c: root.c
+        Cell:
+            text: root.label
+            color: app.muted
+            font_size: sp(13)
+    Text:
+        text: root.score
+        bold: True
+        font_size: sp(28)
+    Muted:
+        text: root.note
+
+
+# ================= shell =================
+
+<NavItem@ButtonBehavior+BoxLayout>:
+    icon: ''
+    text: ''
+    target: ''
+    active: app.tab == self.target
+    orientation: 'vertical'
+    padding: 0, dp(6), 0, dp(4)
+    on_release: app.go(self.target)
+    canvas.before:
+        Color:
+            rgba: app.accent_fill if self.active else (0, 0, 0, 0)
+        RoundedRectangle:
+            size: dp(60), dp(32)
+            pos: self.center_x - dp(30), self.top - dp(38)
+            radius: [dp(16)]
+    Label:
+        text: I.get(root.icon, '')
+        font_name: ICON_FONT
+        font_size: sp(22)
+        color: app.ink if root.active else app.muted
+        size_hint_y: None
+        height: dp(32)
+    Label:
+        text: root.text
+        font_size: sp(12)
+        bold: root.active
+        color: app.text if root.active else app.muted
+
+<NavBar@Glass>:
+    fill: app.glass_strong
+    radius: dp(30)
+    padding: dp(6), 0
+    NavItem:
+        icon: 'home'
+        text: 'Главная'
+        target: 'home'
+    NavItem:
+        icon: 'group'
+        text: 'Клиенты'
+        target: 'clients'
+    NavItem:
+        icon: 'history'
+        text: 'История'
+        target: 'history'
+    NavItem:
+        icon: 'settings'
+        text: 'Настройки'
+        target: 'settings'
+
+<TopBar@BoxLayout>:
+    title: ''
+    size_hint_y: None
+    height: dp(62)
+    padding: max(dp(6), (self.width - MAXW) / 2), dp(8), max(dp(10), (self.width - MAXW) / 2), dp(8)
+    spacing: dp(4)
+    IconBtn:
+        icon: 'back'
+        on_release: app.back()
+    Label:
+        text: root.title
+        color: app.text
+        bold: True
+        font_size: sp(19)
+        text_size: self.size
+        halign: 'left'
+        valign: 'middle'
+        shorten: True
+
+<Root>:
+    canvas.before:
+        Color:
+            rgba: app.bg
+        Rectangle:
+            pos: self.pos
+            size: self.size
+    ScreenManager:
+        id: sm
+        HomeScreen:
+            name: 'home'
+    NavBar:
+        size_hint: None, None
+        size: min(root.width - dp(24), dp(520)), dp(70)
+        pos: (root.width - self.width) / 2, dp(14) if app.nav else -dp(100)
+        opacity: 1 if app.nav else 0
+        disabled: not app.nav
+    Label:
+        id: toast
+        opacity: 0
+        color: app.bg
+        font_size: sp(15)
+        size_hint: None, None
+        width: min(root.width - dp(32), dp(480))
+        text_size: self.width - dp(32), None
+        halign: 'center'
+        height: self.texture_size[1] + dp(28)
+        pos: (root.width - self.width) / 2, dp(100) if app.nav else dp(24)
+        canvas.before:
+            Color:
+                rgba: app.text[:3] + [self.opacity * .92]
+            RoundedRectangle:
+                pos: self.pos
+                size: self.size
+                radius: [dp(16)]
+
+
+# ================= modals =================
+
+<ModalCard@Glass>:
+    fill: app.glass_strong
+    radius: dp(28)
+    orientation: 'vertical'
+    padding: dp(20)
+    spacing: dp(12)
+
+<Dialog>:
+    size_hint: None, None
+    width: min(dp(400), Window.width - dp(32))
+    height: box.minimum_height
+    background_color: 0, 0, 0, 0
+    overlay_color: 0, 0, 0, .35
+    ModalCard:
+        id: box
+        size_hint_y: None
+        height: self.minimum_height
+        Text:
+            text: root.title
+            bold: True
+            font_size: sp(19)
+        Muted:
+            text: root.text
+            font_size: sp(15)
+        Spacer:
+        BoxLayout:
+            size_hint_y: None
+            height: dp(50)
+            spacing: dp(10)
+            Btn:
+                text: 'Отмена'
+                bg: app.surface2
+                fg: app.text
+                height: dp(50)
+                on_release: root.dismiss()
+            Btn:
+                text: root.ok_text
+                bg: app.danger_soft if root.danger else app.accent_fill
+                fg: app.danger if root.danger else app.ink
+                height: dp(50)
+                on_release:
+                    root.dismiss()
+                    root.callback()
+
+<ClientPicker>:
+    size_hint: None, None
+    width: min(dp(440), Window.width - dp(32))
+    height: min(dp(540), Window.height - dp(120))
+    background_color: 0, 0, 0, 0
+    overlay_color: 0, 0, 0, .35
+    ModalCard:
+        Text:
+            text: 'Выберите клиента'
+            bold: True
+            font_size: sp(19)
+        Field:
+            id: query
+            hint_text: 'Поиск или имя нового клиента'
+            on_text: root.search(self.text)
+        Scroller:
+            List:
+                id: list
+
+<BackupPicker@ModalView>:
+    size_hint: None, None
+    width: min(dp(440), Window.width - dp(32))
+    height: min(dp(480), Window.height - dp(120))
+    background_color: 0, 0, 0, 0
+    overlay_color: 0, 0, 0, .35
+    ModalCard:
+        Text:
+            text: 'Резервные копии'
+            bold: True
+            font_size: sp(19)
+        Muted:
+            text: 'Новые сверху. Текущие данные будут заменены.'
+        Scroller:
+            List:
+                id: list
+
+<DayCell@ButtonBehavior+Label>:
+    active: False
+    today: False
+    dim: False
+    color: app.ink if self.active else (app.muted if self.dim else app.text)
+    bold: self.today or self.active
+    font_size: sp(15)
+    canvas.before:
+        Color:
+            rgba: app.accent_fill if self.active else (app.accent_soft if self.today else (0, 0, 0, 0))
+        Ellipse:
+            size: [min(self.size) - dp(4)] * 2
+            pos: self.center_x - (min(self.size) - dp(4)) / 2, self.center_y - (min(self.size) - dp(4)) / 2
+
+<WeekdayLabel@Label>:
+    color: app.muted
+    font_size: sp(12)
+
+<DatePicker>:
+    size_hint: None, None
+    width: min(dp(360), Window.width - dp(32))
+    height: self.width + dp(84)
+    background_color: 0, 0, 0, 0
+    overlay_color: 0, 0, 0, .35
+    ModalCard:
+        padding: dp(14)
+        spacing: dp(4)
+        BoxLayout:
+            size_hint_y: None
+            height: dp(46)
+            IconBtn:
+                icon: 'left'
+                on_release: root.shift(-1)
+            Label:
+                text: root.title
+                color: app.text
+                bold: True
+                font_size: sp(17)
+            IconBtn:
+                icon: 'right'
+                on_release: root.shift(1)
+        GridLayout:
+            cols: 7
+            size_hint_y: None
+            height: dp(24)
+            WeekdayLabel:
+                text: 'Пн'
+            WeekdayLabel:
+                text: 'Вт'
+            WeekdayLabel:
+                text: 'Ср'
+            WeekdayLabel:
+                text: 'Чт'
+            WeekdayLabel:
+                text: 'Пт'
+            WeekdayLabel:
+                text: 'Сб'
+            WeekdayLabel:
+                text: 'Вс'
+        GridLayout:
+            id: grid
+            cols: 7
+
+
+# ================= screens =================
+
+<HomeScreen>:
+    Scroller:
+        Content:
+            Spacer:
+                height: dp(16)
+            Muted:
+                text: root.today
+                font_size: sp(15)
+            Heading:
+                text: root.greeting
+
+            # first run
+            Card:
+                height: self.minimum_height if root.empty else 0
+                opacity: 1 if root.empty else 0
+                disabled: not root.empty
+                padding: dp(22)
+                spacing: dp(12)
+                Label:
+                    text: I['psychology']
+                    font_name: ICON_FONT
+                    font_size: sp(46)
+                    color: app.accent
+                    size_hint_y: None
+                    height: dp(54)
+                    text_size: self.size
+                    halign: 'left'
+                Text:
+                    text: 'Добро пожаловать в PsychoNotes'
+                    bold: True
+                    font_size: sp(20)
+                Muted:
+                    text: 'Карточки клиентов и записи сессий в одном месте. Данные хранятся только на этом устройстве.'
+                    font_size: sp(15)
+                Spacer:
+                Btn:
+                    icon: 'add'
+                    text: 'Добавить первого клиента'
+                    on_release: app.go('client_form')
+                SoftBtn:
+                    icon: 'sparkle'
+                    text: 'Посмотреть на демо-данных'
+                    on_release: root.load_demo()
+
+            # the one thing that matters most: the next appointment
+            Card:
+                fill: app.hero
+                height: self.minimum_height if root.next else 0
+                opacity: 1 if root.next else 0
+                disabled: not root.next
+                padding: dp(20)
+                spacing: dp(10)
+                BoxLayout:
+                    size_hint_y: None
+                    height: dp(30)
+                    spacing: dp(8)
+                    Icon:
+                        icon: 'event'
+                        color: app.accent
+                        font_size: sp(18)
+                        size: dp(20), dp(20)
+                    Cell:
+                        text: 'Следующая встреча'
+                        color: app.accent
+                        bold: True
+                        font_size: sp(14)
+                    Badge:
+                        text: root.next_until
+                        tone: 'good'
+                Text:
+                    text: root.next_when
+                    bold: True
+                    font_size: sp(26)
+                BoxLayout:
+                    size_hint_y: None
+                    height: dp(50)
+                    spacing: dp(12)
+                    Avatar:
+                        text: initials(root.next.get('full_name'))
+                    BoxLayout:
+                        orientation: 'vertical'
+                        Cell:
+                            text: root.next.get('full_name') or ''
+                            bold: True
+                        Cell:
+                            text: root.next.get('request') or 'Запрос не указан'
+                            color: app.muted
+                            font_size: sp(14)
+                Btn:
+                    icon: 'edit'
+                    text: 'Открыть запись встречи'
+                    on_release: app.go('session_form', note_id=root.next['note_id'])
+
+            GridLayout:
+                cols: 3
+                spacing: dp(10)
+                size_hint_y: None
+                height: 0 if root.empty else dp(104)
+                opacity: 0 if root.empty else 1
+                StatTile:
+                    value: str(root.stats[0])
+                    label: root.stat_labels[0]
+                StatTile:
+                    value: str(root.stats[1])
+                    label: root.stat_labels[1]
+                StatTile:
+                    value: str(root.stats[2])
+                    label: root.stat_labels[2]
+
+            SectionTitle:
+                text: 'Нужно заполнить' if todo.children else ''
+                height: self.texture_size[1] if todo.children else 0
+            Muted:
+                text: 'Прошедшие встречи без итога или оценки состояния' if todo.children else ''
+                height: self.texture_size[1] if todo.children else 0
+            List:
+                id: todo
+            SectionTitle:
+                text: 'Дальше по расписанию' if upcoming.children else ''
+                height: self.texture_size[1] if upcoming.children else 0
+            List:
+                id: upcoming
+            SectionTitle:
+                text: 'Недавние сессии' if recent.children else ''
+                height: self.texture_size[1] if recent.children else 0
+            List:
+                id: recent
+    Fab:
+        text: 'Сессия'
+        opacity: 0 if root.empty else 1
+        disabled: root.empty
+        on_release: app.go('session_form')
+
+<ClientsScreen>:
+    BoxLayout:
+        orientation: 'vertical'
+        Header:
+            Heading:
+                text: 'Клиенты'
+            SearchField:
+                id: query
+                hint: 'Поиск по имени'
+                on_text: root.refresh()
+        RecycleView:
+            id: rv
+            key_viewclass: 'viewclass'
+            do_scroll_x: False
+            bar_width: dp(4)
+            bar_color: app.muted[:3] + [.5]
+            bar_inactive_color: app.muted[:3] + [.15]
+            scroll_wheel_distance: dp(60)
+            RecycleBoxLayout:
+                orientation: 'vertical'
+                size_hint_y: None
+                height: self.minimum_height
+                default_size_hint: 1, None
+                spacing: dp(10)
+                padding: max(dp(16), (self.width - MAXW) / 2), dp(4), max(dp(16), (self.width - MAXW) / 2), dp(170)
+    Muted:
+        text: ('Ничего не найдено' if query.text else 'Пока нет клиентов.\nНажмите «Клиент», чтобы добавить первого.') if not rv.data else ''
+        halign: 'center'
+        font_size: sp(16)
+        pos_hint: {'center_y': .5}
+    Fab:
+        text: 'Клиент'
+        on_release: app.go('client_form')
+
+<HistoryScreen>:
+    BoxLayout:
+        orientation: 'vertical'
+        Header:
+            Heading:
+                text: 'История'
+            SearchField:
+                id: query
+                hint: 'Клиент, запрос, техника…'
+                on_text: root.refresh()
+        RecycleView:
+            id: rv
+            key_viewclass: 'viewclass'
+            do_scroll_x: False
+            bar_width: dp(4)
+            bar_color: app.muted[:3] + [.5]
+            bar_inactive_color: app.muted[:3] + [.15]
+            scroll_wheel_distance: dp(60)
+            RecycleBoxLayout:
+                orientation: 'vertical'
+                size_hint_y: None
+                height: self.minimum_height
+                default_size_hint: 1, None
+                spacing: dp(10)
+                padding: max(dp(16), (self.width - MAXW) / 2), 0, max(dp(16), (self.width - MAXW) / 2), dp(170)
+    Muted:
+        text: ('Ничего не найдено' if query.text else 'Сессий пока нет') if not rv.data else ''
+        halign: 'center'
+        font_size: sp(16)
+        pos_hint: {'center_y': .5}
+    Fab:
+        text: 'Сессия'
+        on_release: app.go('session_form')
+
+<SettingsScreen>:
+    Scroller:
+        Content:
+            Spacer:
+                height: dp(16)
+            Heading:
+                text: 'Настройки'
+            Card:
+                CardTitle:
+                    icon: 'light'
+                    text: 'Оформление'
+                BoxLayout:
+                    size_hint_y: None
+                    height: dp(50)
+                    spacing: dp(8)
+                    Btn:
+                        icon: 'light'
+                        text: 'Светлая'
+                        height: dp(50)
+                        bg: app.accent_fill if app.theme == 'light' else app.surface2
+                        fg: app.ink if app.theme == 'light' else app.text
+                        on_release: app.set_theme('light')
+                    Btn:
+                        icon: 'dark'
+                        text: 'Тёмная'
+                        height: dp(50)
+                        bg: app.accent_fill if app.theme == 'dark' else app.surface2
+                        fg: app.ink if app.theme == 'dark' else app.text
+                        on_release: app.set_theme('dark')
+            Card:
+                CardTitle:
+                    icon: 'backup'
+                    text: 'Резервные копии'
+                Muted:
+                    text: 'Данные хранятся только на этом устройстве. Делайте копию регулярно — например, раз в неделю.'
+                Muted:
+                    text: root.info + '\nПапка: ' + root.folder
+                    font_size: sp(13)
+                Btn:
+                    icon: 'backup'
+                    text: 'Создать копию'
+                    on_release: root.export_json()
+                SoftBtn:
+                    icon: 'restore'
+                    text: 'Восстановить из копии'
+                    on_release: root.import_json()
+                SoftBtn:
+                    icon: 'table'
+                    text: 'Экспорт сессий в Excel (CSV)'
+                    on_release: root.export_csv()
+            Card:
+                SoftBtn:
+                    icon: 'sparkle'
+                    text: 'Добавить демо-данные'
+                    on_release: root.load_demo()
+                DangerBtn:
+                    icon: 'delete'
+                    text: 'Удалить все данные'
+                    on_release: root.wipe()
+            Card:
+                Text:
+                    text: 'PsychoNotes 2.0'
+                    bold: True
+                Muted:
+                    text: 'Рабочий журнал психолога: клиенты, сессии, динамика состояния. Работает офлайн, без регистрации.'
+
+<ClientScreen>:
+    BoxLayout:
+        orientation: 'vertical'
+        TopBar:
+            IconBtn:
+                icon: 'edit'
+                on_release: app.go('client_form', client_id=root.kw['client_id'])
+        Scroller:
+            Content:
+                BoxLayout:
+                    size_hint_y: None
+                    height: dp(76)
+                    spacing: dp(16)
+                    Avatar:
+                        text: initials(root.client.get('full_name'))
+                        size: dp(68), dp(68)
+                        font_size: sp(24)
+                    BoxLayout:
+                        orientation: 'vertical'
+                        padding: 0, dp(8)
+                        Cell:
+                            text: root.client.get('full_name') or ''
+                            bold: True
+                            font_size: sp(24)
+                            valign: 'bottom'
+                        Cell:
+                            text: root.meta
+                            color: app.muted
+                            font_size: sp(15)
+                            valign: 'top'
+                TagBox:
+                    id: traits
+                # next appointment, if any
+                BoxLayout:
+                    size_hint_y: None
+                    height: dp(44) if root.next_text else 0
+                    opacity: 1 if root.next_text else 0
+                    padding: dp(14), 0
+                    spacing: dp(10)
+                    canvas.before:
+                        Color:
+                            rgba: app.hero
+                        RoundedRectangle:
+                            pos: self.pos
+                            size: self.size
+                            radius: [dp(14)]
+                    Icon:
+                        icon: 'event'
+                        color: app.accent
+                        font_size: sp(18)
+                        size: dp(20), dp(20)
+                    Cell:
+                        text: root.next_text
+                        font_size: sp(15)
+                Btn:
+                    icon: 'add'
+                    text: 'Новая сессия'
+                    on_release: app.go('session_form', client_id=root.kw['client_id'])
+                Card:
+                    height: self.minimum_height if requests.children else 0
+                    opacity: 1 if requests.children else 0
+                    Muted:
+                        text: 'Запросы'
+                        bold: True
+                    TagBox:
+                        id: requests
+                Card:
+                    height: self.minimum_height if chart.points else 0
+                    opacity: 1 if chart.points else 0
+                    BoxLayout:
+                        size_hint_y: None
+                        height: dp(24)
+                        spacing: dp(6)
+                        Cell:
+                            text: 'Динамика состояния'
+                            bold: True
+                        LegendDot:
+                            c: app.series_before
+                        LegendLabel:
+                            text: 'до'
+                        Widget:
+                            size_hint_x: None
+                            width: dp(6)
+                        LegendDot:
+                            c: app.series_after
+                        LegendLabel:
+                            text: 'после'
+                    Text:
+                        text: root.progress_text
+                        color: app.accent
+                        bold: True
+                        height: self.texture_size[1] if root.progress_text else 0
+                    ProgressChart:
+                        id: chart
+                        size_hint_y: None
+                        height: dp(190)
+                    Muted:
+                        text: 'Самооценка клиента 0–10 в начале и в конце сессии. Нажмите на точку, чтобы увидеть значения.'
+                        font_size: sp(13)
+                InfoCard:
+                    title: 'Анамнез'
+                    text: root.client.get('anamnesis') or ''
+                InfoCard:
+                    title: 'План помощи'
+                    text: root.client.get('help_plan') or ''
+                SectionTitle:
+                    id: sessions_title
+                List:
+                    id: sessions
+
+<ClientFormScreen>:
+    BoxLayout:
+        orientation: 'vertical'
+        TopBar:
+            title: 'Редактирование клиента' if root.editing else 'Новый клиент'
+        Scroller:
+            id: scroll
+            Content:
+                Step:
+                    num: '1'
+                    title: 'Основное'
+                    Labeled:
+                        label: 'Имя и фамилия *'
+                        Field:
+                            id: name
+                            hint_text: 'Анна Соколова'
+                    BoxLayout:
+                        size_hint_y: None
+                        height: self.minimum_height
+                        spacing: dp(12)
+                        Labeled:
+                            label: 'Возраст'
+                            size_hint_x: .35
+                            Field:
+                                id: age
+                                input_filter: 'int'
+                                hint_text: '30'
+                        Labeled:
+                            label: 'Телефон'
+                            Field:
+                                id: phone
+                                input_type: 'tel'
+                                hint_text: '+7 900 000-00-00'
+                Step:
+                    num: '2'
+                    title: 'С чем обратился'
+                    hint: 'Каждый запрос — отдельной строкой. Они станут подсказками при записи сессии.'
+                    List:
+                        id: requests
+                    GhostBtn:
+                        icon: 'add'
+                        text: 'Добавить запрос'
+                        on_release: root.add_request().ids.field.focus = True
+                Step:
+                    num: '3'
+                    title: 'Психологический профиль'
+                    hint: 'Необязательно. Можно заполнить позже.'
+                    Labeled:
+                        label: 'Темперамент'
+                        ChipGroup:
+                            id: temperament
+                            options: ['Сангвиник', 'Холерик', 'Флегматик', 'Меланхолик']
+                    Labeled:
+                        label: 'Ведущая модальность восприятия'
+                        ChipGroup:
+                            id: perception
+                            options: ['Визуал', 'Аудиал', 'Кинестетик', 'Дигитал']
+                    Labeled:
+                        label: 'Тип характера'
+                        Field:
+                            id: character
+                            hint_text: 'Например: тревожно-мнительный'
+                Step:
+                    num: '4'
+                    title: 'Анамнез и план'
+                    Labeled:
+                        label: 'Анамнез'
+                        Area:
+                            id: anamnesis
+                            hint_text: 'История обращения, значимые события, состояние здоровья…'
+                    Labeled:
+                        label: 'План помощи'
+                        Area:
+                            id: plan
+                            hint_text: 'Цели и этапы работы'
+                Btn:
+                    icon: 'check'
+                    text: 'Сохранить'
+                    on_release: root.save()
+                DangerBtn:
+                    icon: 'delete'
+                    text: 'Удалить клиента'
+                    height: dp(52) if root.editing else 0
+                    opacity: 1 if root.editing else 0
+                    disabled: not root.editing
+                    on_release: root.delete()
+
+<SessionScreen>:
+    BoxLayout:
+        orientation: 'vertical'
+        TopBar:
+            title: 'Сессия'
+            IconBtn:
+                icon: 'edit'
+                on_release: app.go('session_form', note_id=root.kw['note_id'])
+        Scroller:
+            Content:
+                ClientRow:
+                    client_id: root.note.get('client_id') or 0
+                    name: root.note.get('full_name') or ''
+                    initials: initials(self.name)
+                    subtitle: root.when
+                TagBox:
+                    Tag:
+                        text: root.note.get('meeting_location') or ''
+                    Tag:
+                        text: root.note.get('weather') or ''
+                # reminder for an unfinished write-up
+                Card:
+                    fill: app.warn_soft
+                    height: 0 if root.complete else self.minimum_height
+                    opacity: 0 if root.complete else 1
+                    disabled: root.complete
+                    Text:
+                        text: 'Запись не завершена'
+                        bold: True
+                    Text:
+                        text: 'Добавьте итог встречи и оценку состояния в конце — так будет видна динамика клиента.'
+                        font_size: sp(14)
+                    Btn:
+                        icon: 'edit'
+                        text: 'Заполнить итоги'
+                        bg: app.surface
+                        fg: app.text
+                        on_release: app.go('session_form', note_id=root.kw['note_id'])
+                Card:
+                    BoxLayout:
+                        size_hint_y: None
+                        height: dp(30)
+                        spacing: dp(8)
+                        Cell:
+                            text: root.summary
+                            bold: True
+                            font_size: sp(17)
+                        Badge:
+                            text: root.delta
+                            tone: root.tone
+                    GridLayout:
+                        cols: 2
+                        spacing: dp(10)
+                        size_hint_y: None
+                        height: self.minimum_height
+                        ScoreBox:
+                            label: 'В начале'
+                            c: app.series_before
+                            score: '—' if root.note.get('initial_state_score') is None else f"{root.note['initial_state_score']}/10"
+                            note: root.note.get('initial_state') or ''
+                        ScoreBox:
+                            label: 'В конце'
+                            c: app.series_after
+                            score: '—' if root.note.get('final_state_score') is None else f"{root.note['final_state_score']}/10"
+                            note: root.note.get('final_state') or ''
+                List:
+                    id: details
+                    spacing: dp(14)
+
+<SessionFormScreen>:
+    BoxLayout:
+        orientation: 'vertical'
+        TopBar:
+            title: 'Редактирование сессии' if root.editing else 'Новая сессия'
+        Scroller:
+            id: scroll
+            Content:
+                Step:
+                    num: '1'
+                    title: 'Встреча'
+                    Labeled:
+                        label: 'Клиент *'
+                        SelectBox:
+                            icon: 'person'
+                            text: root.client_name or 'Выбрать клиента'
+                            placeholder: not root.client_name
+                            on_release: root.pick_client()
+                    GridLayout:
+                        cols: 2
+                        spacing: dp(12)
+                        size_hint_y: None
+                        height: self.minimum_height
+                        Labeled:
+                            label: 'Дата'
+                            SelectBox:
+                                icon: 'calendar'
+                                text: human_date(root.meeting_date, weekday=True)
+                                on_release: root.pick_date()
+                        Labeled:
+                            label: 'Время'
+                            Field:
+                                id: time
+                                hint_text: 'ЧЧ:ММ'
+                                input_filter: lambda text, undo: ''.join(ch for ch in text if ch.isdigit() or ch == ':')
+                    Labeled:
+                        label: 'Место'
+                        Field:
+                            id: location
+                            hint_text: 'Где проходит встреча'
+                        ChipGroup:
+                            id: location_chips
+                            value: location.text
+                            on_value: location.text = self.value
+                    Labeled:
+                        label: 'Погода'
+                        ChipGroup:
+                            id: weather
+                            options: ['Ясно', 'Облачно', 'Дождь', 'Снег', 'Ветрено']
+                Step:
+                    num: '2'
+                    title: 'В начале'
+                    hint: 'С чем пришёл клиент и как он себя чувствует.'
+                    Labeled:
+                        label: 'Запрос на сессию'
+                        Field:
+                            id: request
+                            hint_text: 'Своими словами клиента'
+                        ChipGroup:
+                            id: request_chips
+                            value: request.text
+                            on_value: request.text = self.value
+                    Labeled:
+                        label: 'Состояние'
+                        Area:
+                            id: initial_state
+                            hint_text: 'Как клиент описывает своё состояние'
+                    Labeled:
+                        label: 'Оценка состояния'
+                        ScoreSelector:
+                            id: before
+                        ScaleHints:
+                Step:
+                    num: '3'
+                    title: 'Работа'
+                    Labeled:
+                        label: 'Ход встречи'
+                        Area:
+                            id: progress
+                    Labeled:
+                        label: 'Техники'
+                        Area:
+                            id: techniques
+                Step:
+                    num: '4'
+                    title: 'Итог'
+                    hint: 'Заполните после встречи — это главное для отслеживания динамики.'
+                    Labeled:
+                        label: 'Итог встречи'
+                        Area:
+                            id: outcome
+                    Labeled:
+                        label: 'Состояние в конце'
+                        Area:
+                            id: final_state
+                    Labeled:
+                        label: 'Оценка состояния'
+                        ScoreSelector:
+                            id: after
+                        ScaleHints:
+                Btn:
+                    icon: 'check'
+                    text: 'Сохранить'
+                    on_release: root.save()
+                DangerBtn:
+                    icon: 'delete'
+                    text: 'Удалить сессию'
+                    height: dp(52) if root.editing else 0
+                    opacity: 1 if root.editing else 0
+                    disabled: not root.editing
+                    on_release: root.delete()
