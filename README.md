@@ -85,8 +85,19 @@ The database lives in the OS user-data folder, for example `~/Library/Applicatio
 
 | Target | Command |
 |---|---|
-| Android APK | `buildozer android debug` (config in `buildozer.spec`). Builds for arm64-v8a and armeabi-v7a, with a minimum of Android 7.0. The first build takes about 30 min; later ones take about a minute. See [CLAUDE.md](CLAUDE.md#android-build-buildozer) for macOS notes and two python-for-android workarounds. |
+| Android APK | `buildozer android debug` (config in `buildozer.spec`). Builds for arm64-v8a and armeabi-v7a, with a minimum of Android 7.0. The first build takes about 30 min; later ones take about a minute. See the notes below. |
 | Windows / macOS app | `pyinstaller --name PsychoNotes --windowed --icon assets/icon.png --add-data "ui.kv:." --add-data "assets:assets" main.py` (on Windows, use `;` instead of `:`) |
+
+<details>
+<summary><b>Building the APK on macOS</b></summary>
+
+- Use `openjdk@21` as `JAVA_HOME`. Put GNU `libtool` first in `PATH` (`/opt/homebrew/opt/libtool/libexec/gnubin`). Run buildozer from a virtualenv with `VIRTUAL_ENV` set.
+- The current python-for-android master needs two local fixes in `.buildozer/android/platform/python-for-android`:
+  - `pythonforandroid/recipes/kivy/__init__.py`: set `python_depends = ['filetype']`. `requests` pulls in an Android-only `charset_normalizer` wheel that the host pip refuses to install. The app makes no network requests, so nothing is lost.
+  - `pythonforandroid/build.py`, in `run_pymodules_install`: create the venv with `'-m', 'venv', '--clear', 'venv'`. Otherwise the second ABI reuses the first ABI's venv, two pip versions get mixed, and pip fails with `ImportError: BuildDependencyInstallError`.
+- `Traceback` lines from `pip install ... --dry-run` in the log are harmless. They mean no prebuilt Android wheel exists, so the package is built from source.
+
+</details>
 
 ## Under the hood
 

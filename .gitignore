@@ -7,3 +7,8 @@ bin/
 *.exe
 .DS_Store
 .venv/
+
+# local tooling
+CLAUDE.md
+.claude/
+.ruff_cache/
