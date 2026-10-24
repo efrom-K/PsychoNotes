@@ -339,7 +339,7 @@ class Page(Screen):
     kw = {}
 
     def on_pre_enter(self, *_):
-        if self.ids:  # the first screen is entered before its kv rule is applied
+        if self.children:  # the first screen is entered before its kv rule is applied (not ids: some rules have none)
             self.refresh()
 
     def refresh(self):

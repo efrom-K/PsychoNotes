@@ -14,6 +14,9 @@ from kivy.clock import Clock  # noqa: E402
 
 
 class ShotApp(PsychoNotesApp):
+    def export_dir(self):
+        return '~/Documents/PsychoNotes'  # shown on the settings screen; keep the real home path out of the shots
+
     def on_start(self):
         self.prev_theme = self.config.get('ui', 'theme')
         self.set_theme('light')

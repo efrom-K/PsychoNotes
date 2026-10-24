@@ -53,7 +53,7 @@ README screenshots are compact JPEGs: `sips -s format jpeg -s formatOptions 82 -
 - Those properties are still `None` while `canvas.before` is first built, so canvas expressions use `self.bg or (0, 0, 0, 0)`.
 - A property named `on_<x>` is treated as the event handler for `<x>`. That is why the theme token is `accent_fg`/`ink`, not `on_accent`.
 - `TextInput` draws its text with the last `Color` in `canvas.before`. A custom `Field` background must end by restoring the text colour, or the text becomes invisible.
-- The first screen gets `on_pre_enter` before its kv rule has been applied, hence the `if self.ids:` guard. `on_start` refreshes home explicitly.
+- The first screen gets `on_pre_enter` before its kv rule has been applied, hence the `if self.children:` guard. Don't guard on `ids`: a rule without any `id` would then never refresh. `on_start` refreshes home explicitly.
 - `RoundedRectangle` doesn't tile textures. The grain uses `texture.get_region()` sized 1:1 to the widget.
 - `Window.screenshot()` reads the GL back buffer at an arbitrary moment and returns stale or overlapping frames. Use `widget.export_to_png()`, as `tools/screenshots.py` does.
 - Widgets are hidden by setting `height: 0`, `opacity: 0` and `disabled: True`. Their children are still laid out past the zero-height box, and a disabled widget swallows any touch that collides with it, so it blocks taps on whatever lies underneath. `Glass.on_touch_down` ignores touches while `height == 0`; put any new hideable container on `Glass`, or guard it the same way.

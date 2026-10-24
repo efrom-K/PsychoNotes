@@ -136,6 +136,7 @@ class Smoke(PsychoNotesApp):
 
     def backup_then_delete(self):
         self.go('settings')
+        assert self.screen().folder  # first visit must refresh even though the rule has no ids
         self.screen().export_json()
         assert glob.glob(os.path.join(self.export_dir(), '*.json'))
         self.go('client', client_id=self.cid)
