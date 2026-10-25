@@ -4,12 +4,20 @@ import json
 import sqlite3
 from datetime import date, datetime
 
+from i18n import tr
+
 CLIENT_FIELDS = ('full_name', 'age', 'phone_number', 'temperament', 'character_type',
                  'perception_type', 'anamnesis', 'help_plan')
 NOTE_FIELDS = ('client_id', 'meeting_date', 'meeting_time', 'meeting_location', 'weather',
                'initial_state', 'initial_state_score', 'request', 'meeting_progress',
                'techniques_used', 'meeting_outcome', 'final_state', 'final_state_score')
 BACKUP_VERSION = 1
+# CSV columns and their (translated) headers
+CSV_COLUMNS = {'full_name': 'Клиент', 'meeting_date': 'Дата', 'meeting_time': 'Время', 'meeting_location': 'Место',
+               'weather': 'Погода', 'initial_state': 'Состояние в начале', 'initial_state_score': 'Оценка в начале',
+               'request': 'Запрос на сессию', 'meeting_progress': 'Ход встречи', 'techniques_used': 'Техники',
+               'meeting_outcome': 'Итог встречи', 'final_state': 'Состояние в конце',
+               'final_state_score': 'Оценка в конце'}
 
 # Schema is unchanged from v1, so databases created by older releases open as is.
 SCHEMA = '''
@@ -216,10 +224,10 @@ class Database:
         with open(path, encoding='utf-8') as f:
             backup = json.load(f)
         if not isinstance(backup, dict) or backup.get('app') != 'PsychoNotes':
-            raise ValueError('Это не резервная копия PsychoNotes')
+            raise ValueError(tr('Это не резервная копия PsychoNotes'))
         clients, notes = backup.get('clients'), backup.get('notes')
         if not isinstance(clients, list) or not isinstance(notes, list):
-            raise ValueError('Файл повреждён')
+            raise ValueError(tr('Файл повреждён'))
         try:
             with self.conn:
                 self.conn.execute('DELETE FROM Clients')
@@ -235,15 +243,16 @@ class Database:
                         f'INSERT INTO Notes (note_id, {", ".join(NOTE_FIELDS)}) VALUES (?{", ?" * len(NOTE_FIELDS)})',
                         [n['note_id']] + [n.get(f) for f in NOTE_FIELDS])
         except (KeyError, TypeError, sqlite3.Error) as e:
-            raise ValueError(f'Файл повреждён: {e}') from e
+            raise ValueError(tr('Файл повреждён: {error}', error=e)) from e
         return len(clients), len(notes)
 
     def export_csv(self, path):
         rows = self._rows(NOTE_SELECT + ' ORDER BY n.meeting_date, n.meeting_time')
         with open(path, 'w', encoding='utf-8-sig', newline='') as f:  # BOM so Excel reads Cyrillic
-            writer = csv.DictWriter(f, fieldnames=['full_name', *NOTE_FIELDS[1:]], extrasaction='ignore')
-            writer.writeheader()
-            writer.writerows(rows)
+            writer = csv.writer(f)
+            writer.writerow([tr(h) for h in CSV_COLUMNS.values()])
+            for r in rows:  # weather and the default locations are translation keys
+                writer.writerow([tr(r[k]) if k in ('weather', 'meeting_location') and r[k] else r[k] for k in CSV_COLUMNS])
         return len(rows)
 
     def wipe(self):

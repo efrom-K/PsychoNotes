@@ -18,7 +18,7 @@ Config.set('kivy', 'exit_on_escape', '0')  # Esc means "back"
 from kivy.animation import Animation
 from kivy.app import App
 from kivy.clock import Clock
-from kivy.core.text import Label as CoreLabel
+from kivy.core.text import DEFAULT_FONT, Label as CoreLabel, LabelBase
 from kivy.core.window import Window
 from kivy.factory import Factory
 from kivy.graphics import Color, Ellipse, Line, Rectangle, RoundedRectangle
@@ -38,9 +38,12 @@ from kivy.utils import get_color_from_hex
 
 import demo
 from database import Database, parse_date, valid_time
-from fmt import (MONTHS, MONTHS_GEN, MONTHS_PREP, WEEKDAYS_FULL, delta_text, human_date, initials, month_title, plural,
-                 time_until)
+import i18n
+from fmt import (MONTHS_PREP, MONTHS_SHORT, delta_text, human_date, initials, month_title, month_year, short_date, time_until,
+                 today_title)
+from i18n import LANGS, plural, tr
 
+ROBOTO = LabelBase._fonts[DEFAULT_FONT]  # Kivy's own regular/italic/bold/bold-italic files
 BASE_DIR = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
 
 # Soft pastel, matte: milky translucent panels with grain on a flat background.
@@ -67,7 +70,19 @@ TABS = ('home', 'clients', 'history', 'settings')
 SCREENS = {'clients': 'ClientsScreen', 'history': 'HistoryScreen', 'settings': 'SettingsScreen',
            'client': 'ClientScreen', 'client_form': 'ClientFormScreen', 'session': 'SessionScreen',
            'session_form': 'SessionFormScreen'}  # built on first visit; only home exists at startup
-LOCATIONS = ['Кабинет', 'Онлайн']
+LOCATIONS = ['Кабинет', 'Онлайн']  # translated when offered: location is free text, stored as typed
+# System fonts with ideographs for ja/zh, first found wins (index 0 of a .ttc: the Japanese face of Noto CJK).
+CJK_FONTS = ['/system/fonts/NotoSansCJK-Regular.ttc', '/system/fonts/NotoSansSC-Regular.otf',
+             '/system/fonts/DroidSansFallback.ttf', '/System/Library/Fonts/Hiragino Sans GB.ttc',
+             '/System/Library/Fonts/Supplemental/Arial Unicode.ttf', 'C:/Windows/Fonts/msyh.ttc',
+             'C:/Windows/Fonts/YuGothR.ttc', '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc',
+             '/usr/share/fonts/noto-cjk/NotoSansCJK-Regular.ttc',
+             '/usr/share/fonts/truetype/droid/DroidSansFallbackFull.ttf']
+CJK_FONT = next((f for f in CJK_FONTS if os.path.exists(f)), None)
+# Fixed names, so each language chip can be drawn in a font that has its script whatever the UI language.
+LabelBase.register('Latin', *ROBOTO)
+if CJK_FONT:
+    LabelBase.register('CJK', CJK_FONT)
 
 
 def app():
@@ -97,13 +112,13 @@ def tone(before, after):
 def session_item(n, todo=False):
     d = parse_date(n['meeting_date'])
     item = dict(viewclass='SessionRow', height=dp(72), note_id=n['note_id'],
-                day=str(d.day) if d else '?', mon=MONTHS_GEN[d.month - 1][:3] if d else '',
+                day=str(d.day) if d else '?', mon=tr(MONTHS_SHORT[d.month - 1]) if d else '',
                 title=n['full_name'],
                 subtitle=' · '.join(filter(None, [n['meeting_time'], n.get('request')])),
                 badge=delta_text(n['initial_state_score'], n['final_state_score']),
                 tone=tone(n['initial_state_score'], n['final_state_score']), target='session')
     if todo:
-        item.update(badge='Заполнить', tone='warn', target='session_form')
+        item.update(badge=tr('Заполнить'), tone='warn', target='session_form')
     return item
 
 
@@ -140,14 +155,15 @@ class ChipGroup(StackLayout):
 
     def on_options(self, *_):
         self.clear_widgets()
-        for opt in self.options:
-            chip = make('Chip', text=opt, active=opt == self.value)
-            chip.bind(on_release=lambda c: setattr(self, 'value', '' if self.value == c.text else c.text))
+        for opt in self.options:  # the value stays the untranslated option, so stored data is language-neutral
+            chip = make('Chip', text=tr(opt), active=opt == self.value)
+            chip.bind(on_release=lambda c, opt=opt: setattr(self, 'value', '' if self.value == opt else opt))
+            chip.option = opt
             self.add_widget(chip)
 
     def on_value(self, *_):
         for chip in self.children:
-            chip.active = chip.text == self.value
+            chip.active = chip.option == self.value
 
 
 class ScoreSelector(BoxLayout):
@@ -204,7 +220,7 @@ class ProgressChart(Widget):
                 Rectangle(texture=t, size=t.size, pos=(self.x + dp(20) - t.width, y - t.height / 2))
             for i in {0, len(self.points) - 1}:
                 d = parse_date(self.points[i]['meeting_date'])
-                t = self._text(f'{d.day} {MONTHS_GEN[d.month - 1][:3]}')
+                t = self._text(short_date(d))
                 x, _ = self._xy(i, 0)
                 x = min(max(x - t.width / 2, self.x), self.right - t.width)
                 Rectangle(texture=t, size=t.size, pos=(x, self.y))
@@ -229,8 +245,8 @@ class ProgressChart(Widget):
     def _tooltip(self, a):
         p = self.points[self.selected]
         fmt = lambda v: '—' if v is None else str(v)
-        t = self._text(f"{human_date(p['meeting_date'])}   до {fmt(p['initial_state_score'])}"
-                       f"   после {fmt(p['final_state_score'])}", 13, True)
+        t = self._text(tr('{date}   до {before}   после {after}', date=human_date(p['meeting_date']),
+                          before=fmt(p['initial_state_score']), after=fmt(p['final_state_score'])), 13, True)
         x, _ = self._xy(self.selected, 0)
         w, h = t.width + dp(20), t.height + dp(12)
         x = min(max(x - w / 2, self.x), self.right - w)
@@ -260,7 +276,7 @@ class ProgressChart(Widget):
 class Dialog(ModalView):
     title = StringProperty('')
     text = StringProperty('')
-    ok_text = StringProperty('Удалить')
+    ok_text = StringProperty('')
     danger = BooleanProperty(True)
     callback = ObjectProperty(None)
 
@@ -279,7 +295,7 @@ class ClientPicker(ModalView):
         clients = app().db.clients(text)
         name = ' '.join(text.split())
         if name and not any(c['full_name'].casefold() == name.casefold() for c in clients):
-            btn = make('SoftBtn', icon='add', text=f'Новый клиент «{name}»')
+            btn = make('SoftBtn', icon='add', text=tr('Новый клиент «{name}»', name=name))
             btn.bind(on_release=lambda _: self.pick(app().db.save_client({'full_name': name}), name))
             box.add_widget(btn)
         for c in clients:
@@ -308,7 +324,7 @@ class DatePicker(ModalView):
         self.render()
 
     def render(self):
-        self.title = f'{MONTHS[self.month.month - 1]} {self.month.year}'
+        self.title = month_year(self.month.month, self.month.year)
         grid = self.ids.grid
         grid.clear_widgets()
         start = self.month - timedelta(days=self.month.weekday())
@@ -373,21 +389,22 @@ class HomeScreen(Page):
 
     def refresh(self):
         now = datetime.now()
-        self.greeting = ('Доброй ночи' if now.hour < 5 else 'Доброе утро' if now.hour < 12
-                         else 'Добрый день' if now.hour < 18 else 'Добрый вечер')
-        self.today = f'{WEEKDAYS_FULL[now.weekday()]}, {now.day} {MONTHS_GEN[now.month - 1]}'
+        self.greeting = tr('Доброй ночи' if now.hour < 5 else 'Доброе утро' if now.hour < 12
+                           else 'Добрый день' if now.hour < 18 else 'Добрый вечер')
+        self.today = today_title(now.date())
         d = app().db.dashboard()
         self.empty = d['clients'] == 0
         avg = '—' if d['avg_delta'] is None else f"{d['avg_delta']:+.1f}".replace('-', '−')
         self.stats = [d['clients'], d['month'], avg]
         self.stat_labels = [plural(d['clients'], 'клиент', 'клиента', 'клиентов'),
-                            f"{plural(d['month'], 'сессия', 'сессии', 'сессий')} в {MONTHS_PREP[now.month - 1]}",
-                            'средний сдвиг за сессию']
+                            tr('{what} в {month}', what=plural(d['month'], 'сессия', 'сессии', 'сессий'),
+                               month=tr(MONTHS_PREP[now.month - 1])),
+                            tr('средний сдвиг за сессию')]
         upcoming = d['upcoming']
         self.next = upcoming[0] if upcoming else {}
         if upcoming:
             n = upcoming[0]
-            self.next_when = f"{human_date(n['meeting_date'])}, {n['meeting_time']}"
+            self.next_when = tr('{date}, {time}', date=human_date(n['meeting_date']), time=n['meeting_time'])
             self.next_until = time_until(datetime.fromisoformat(f"{n['meeting_date']}T{n['meeting_time']}"), now)
         fill(self.ids.upcoming, map(session_item, upcoming[1:]))
         fill(self.ids.todo, (session_item(n, todo=True) for n in d['todo']))
@@ -395,7 +412,7 @@ class HomeScreen(Page):
 
     def load_demo(self):
         demo.seed(app().db)
-        app().toast('Демо-данные загружены')
+        app().toast(tr('Демо-данные загружены'))
         self.refresh()
 
 
@@ -404,8 +421,9 @@ class ClientsScreen(Page):
         self.ids.rv.data = [dict(
             viewclass='ClientRow', height=dp(72), client_id=c['client_id'], name=c['full_name'],
             initials=initials(c['full_name']),
-            subtitle=(f"{c['session_count']} {plural(c['session_count'], 'сессия', 'сессии', 'сессий')}"
-                      + (f" · последняя {human_date(c['last_session']).lower()}" if c['last_session'] else '')))
+            subtitle=(plural(c['session_count'], '{n} сессия', '{n} сессии', '{n} сессий')
+                      + (tr(' · последняя {date}', date=human_date(c['last_session'], inline=True))
+                         if c['last_session'] else '')))
             for c in app().db.clients(self.ids.query.text)]
 
 
@@ -432,28 +450,29 @@ class ClientScreen(Page):
         if c is None:  # deleted while we were further down the stack
             return Clock.schedule_once(lambda _: app().back(force=True))
         self.client = c
-        age = f"{c['age']} {plural(c['age'], 'год', 'года', 'лет')}" if c['age'] is not None else ''
+        age = plural(c['age'], '{n} год', '{n} года', '{n} лет') if c['age'] is not None else ''
         self.meta = ' · '.join(filter(None, [age, c['phone_number']]))
         nxt = db.next_session(c['client_id'])
-        self.next_text = f"Следующая встреча: {human_date(nxt['meeting_date']).lower()}, {nxt['meeting_time']}" if nxt else ''
+        self.next_text = tr('Следующая встреча: {date}, {time}', date=human_date(nxt['meeting_date'], inline=True),
+                            time=nxt['meeting_time']) if nxt else ''
         for box, values in ((self.ids.traits, [c['temperament'], c['perception_type'], c['character_type']]),
                             (self.ids.requests, c['requests'])):
             box.clear_widgets()
             for v in filter(None, values):
-                box.add_widget(make('Tag', text=v))
+                box.add_widget(make('Tag', text=tr(v)))
         points = db.progress(c['client_id'])
         finals = [p['final_state_score'] for p in points if p['final_state_score'] is not None]
         if len(finals) >= 2:
             first, last = finals[0], finals[-1]
-            verb = 'выросло' if last > first else 'снизилось' if last < first else 'не изменилось'
-            tail = f' с {first} до {last}' if last != first else f', {last} из 10'
-            self.progress_text = f'Состояние после сессий {verb}{tail}'
+            self.progress_text = tr('Состояние после сессий выросло с {a} до {b}' if last > first else
+                                    'Состояние после сессий снизилось с {a} до {b}' if last < first else
+                                    'Состояние после сессий не изменилось, {b} из 10', a=first, b=last)
         else:
             self.progress_text = ''
         self.ids.chart.selected = -1
         self.ids.chart.points = points
         notes = db.notes(client_id=c['client_id'])
-        self.ids.sessions_title.text = f"Сессии · {len(notes)}" if notes else 'Сессий пока нет'
+        self.ids.sessions_title.text = tr('Сессии · {n}', n=len(notes)) if notes else tr('Сессий пока нет')
         fill(self.ids.sessions, map(session_item, notes))
 
 
@@ -496,13 +515,13 @@ class ClientFormScreen(FormPage):
     def save(self):
         data = self.collect()
         if not data['full_name']:
-            return app().toast('Укажите имя клиента')
+            return app().toast(tr('Укажите имя клиента'))
         age = data['age']
         if age and not (age.isdigit() and int(age) <= 120):
-            return app().toast('Возраст — число от 0 до 120')
+            return app().toast(tr('Возраст — число от 0 до 120'))
         data['age'] = int(age) if age else None
         cid = app().db.save_client(data, self.kw.get('client_id'))
-        app().toast('Клиент сохранён')
+        app().toast(tr('Клиент сохранён'))
         app().back(force=True)
         if not self.editing:
             app().go('client', client_id=cid)
@@ -510,9 +529,9 @@ class ClientFormScreen(FormPage):
     def delete(self):
         def do():
             app().db.delete_client(self.kw['client_id'])
-            app().toast('Клиент и его сессии удалены')
+            app().toast(tr('Клиент и его сессии удалены'))
             app().go('clients')
-        app().confirm('Удалить клиента?', 'Карточка и все сессии будут удалены без возможности восстановления.', do)
+        app().confirm(tr('Удалить клиента?'), tr('Карточка и все сессии будут удалены без возможности восстановления.'), do)
 
 
 class SessionScreen(Page):
@@ -532,11 +551,12 @@ class SessionScreen(Page):
         before, after = n['initial_state_score'], n['final_state_score']
         self.delta, self.tone = delta_text(before, after), tone(before, after)
         d = abs(after - before) if self.tone else 0
+        points = plural(d, '{n} балл', '{n} балла', '{n} баллов')
         self.summary = {
-            'good': f"Состояние улучшилось на {d} {plural(d, 'балл', 'балла', 'баллов')}",
-            'bad': f"Состояние ухудшилось на {d} {plural(d, 'балл', 'балла', 'баллов')}",
-            'flat': 'Состояние не изменилось',
-        }.get(self.tone, 'Оценки не указаны')
+            'good': tr('Состояние улучшилось на {points}', points=points),
+            'bad': tr('Состояние ухудшилось на {points}', points=points),
+            'flat': tr('Состояние не изменилось'),
+        }.get(self.tone, tr('Оценки не указаны'))
         upcoming = datetime.fromisoformat(f"{n['meeting_date']}T{n['meeting_time']}") > datetime.now()
         self.complete = upcoming or (after is not None and bool(n['meeting_outcome']))
         box = self.ids.details
@@ -544,7 +564,7 @@ class SessionScreen(Page):
         for title, key in (('Запрос', 'request'), ('Ход встречи', 'meeting_progress'),
                            ('Техники', 'techniques_used'), ('Итог', 'meeting_outcome')):
             if n[key]:
-                box.add_widget(make('InfoCard', title=title, text=n[key]))
+                box.add_widget(make('InfoCard', title=tr(title), text=n[key]))
 
 
 class SessionFormScreen(FormPage):
@@ -566,7 +586,7 @@ class SessionFormScreen(FormPage):
         self.meeting_date = n.get('meeting_date') or date.today().isoformat()
         ids.time.text = n.get('meeting_time') or datetime.now().strftime('%H:%M')
         ids.location.text = n.get('meeting_location') or ''
-        ids.location_chips.options = list(dict.fromkeys(LOCATIONS + app().db.known_locations()))
+        ids.location_chips.options = list(dict.fromkeys(tr(x) for x in LOCATIONS + app().db.known_locations()))
         ids.weather.value = n.get('weather') or ''
         ids.initial_state.text = n.get('initial_state') or ''
         ids.before.value = -1 if n.get('initial_state_score') is None else n['initial_state_score']
@@ -604,22 +624,22 @@ class SessionFormScreen(FormPage):
     def save(self):
         data = self.collect()
         if not data['client_id']:
-            return app().toast('Выберите клиента')
+            return app().toast(tr('Выберите клиента'))
         t = data['meeting_time']
         if len(t) == 4 and t[1] == ':':
             data['meeting_time'] = t = '0' + t
         if not valid_time(t):
-            return app().toast('Время в формате ЧЧ:ММ, например 14:30')
+            return app().toast(tr('Время в формате ЧЧ:ММ, например 14:30'))
         app().db.save_note(data, self.kw.get('note_id'))
-        app().toast('Сессия сохранена')
+        app().toast(tr('Сессия сохранена'))
         app().back(force=True)
 
     def delete(self):
         def do():
             app().db.delete_note(self.kw['note_id'])
-            app().toast('Сессия удалена')
+            app().toast(tr('Сессия удалена'))
             app().back(force=True)
-        app().confirm('Удалить сессию?', 'Запись о встрече будет удалена без возможности восстановления.', do)
+        app().confirm(tr('Удалить сессию?'), tr('Запись о встрече будет удалена без возможности восстановления.'), do)
 
 
 class SettingsScreen(Page):
@@ -628,9 +648,13 @@ class SettingsScreen(Page):
 
     def refresh(self):
         d = app().db.dashboard()
-        self.info = (f"{d['clients']} {plural(d['clients'], 'клиент', 'клиента', 'клиентов')} · "
-                     f"{d['sessions']} {plural(d['sessions'], 'сессия', 'сессии', 'сессий')}")
+        self.info = (plural(d['clients'], '{n} клиент', '{n} клиента', '{n} клиентов') + ' · '
+                     + plural(d['sessions'], '{n} сессия', '{n} сессии', '{n} сессий'))
         self.folder = app().export_dir()
+        self.ids.lang.value = LANGS[i18n.lang]
+        cjk_names = [LANGS[c] for c in i18n.CJK]
+        for chip in self.ids.lang.children:
+            chip.font_name = 'CJK' if CJK_FONT and chip.option in cjk_names else 'Latin'
 
     def _stamp(self):
         return datetime.now().strftime('%Y-%m-%d_%H-%M')
@@ -638,19 +662,19 @@ class SettingsScreen(Page):
     def export_json(self):
         path = os.path.join(app().export_dir(), f'psychonotes_{self._stamp()}.json')
         app().db.export_json(path)
-        app().toast(f'Копия сохранена: {os.path.basename(path)}')
+        app().toast(tr('Копия сохранена: {file}', file=os.path.basename(path)))
 
     def export_csv(self):
         path = os.path.join(app().export_dir(), f'sessions_{self._stamp()}.csv')
         count = app().db.export_csv(path)
-        app().toast(f'{count} {plural(count, "сессия", "сессии", "сессий")} → {os.path.basename(path)}')
+        app().toast(f'{plural(count, "{n} сессия", "{n} сессии", "{n} сессий")} → {os.path.basename(path)}')
 
     def import_json(self):
         folder = app().export_dir()
         files = sorted((f for f in os.listdir(folder) if f.endswith('.json')),
                        key=lambda f: os.path.getmtime(os.path.join(folder, f)), reverse=True)
         if not files:
-            return app().toast('Положите файл .json в папку резервных копий')
+            return app().toast(tr('Положите файл .json в папку резервных копий'))
         picker = Factory.BackupPicker()
         for f in files[:8]:
             row = make('PickRow', text=f)
@@ -664,22 +688,31 @@ class SettingsScreen(Page):
                 clients, notes = app().db.import_json(path)
             except (OSError, ValueError) as e:
                 return app().toast(str(e))
-            app().toast(f'Восстановлено: {clients} клиентов, {notes} сессий')
+            app().toast(tr('Восстановлено: {clients}, {notes}',
+                           clients=plural(clients, '{n} клиент', '{n} клиента', '{n} клиентов'),
+                           notes=plural(notes, '{n} сессия', '{n} сессии', '{n} сессий')))
             self.refresh()
-        app().confirm('Восстановить из копии?', 'Текущие данные будут заменены данными из файла.', do,
-                      ok_text='Восстановить')
+        app().confirm(tr('Восстановить из копии?'), tr('Текущие данные будут заменены данными из файла.'), do,
+                      ok_text=tr('Восстановить'))
 
     def load_demo(self):
         demo.seed(app().db)
-        app().toast('Демо-данные добавлены')
+        app().toast(tr('Демо-данные добавлены'))
         self.refresh()
+
+    def set_lang(self, name):
+        code = next((c for c, n in LANGS.items() if n == name), None)
+        if code and code != i18n.lang:  # after the chip's touch handling: the switch rebuilds the whole UI
+            Clock.schedule_once(lambda _: app().set_lang(code))
+        elif not code:  # tapping the active chip clears it; a language is always selected
+            self.ids.lang.value = LANGS[i18n.lang]
 
     def wipe(self):
         def do():
             app().db.wipe()
-            app().toast('Все данные удалены')
+            app().toast(tr('Все данные удалены'))
             self.refresh()
-        app().confirm('Удалить все данные?', 'Все клиенты и сессии будут удалены. Сначала сделайте резервную копию.', do)
+        app().confirm(tr('Удалить все данные?'), tr('Все клиенты и сессии будут удалены. Сначала сделайте резервную копию.'), do)
 
 
 # ---------- app ----------
@@ -699,12 +732,13 @@ class PsychoNotesApp(App):
         return super().get_application_config(os.path.join(self.user_data_dir, '%(appname)s.ini'))
 
     def build_config(self, config):
-        config.setdefaults('ui', {'theme': 'light'})
+        config.setdefaults('ui', {'theme': 'light', 'lang': ''})
 
     def build(self):
         self.icon = os.path.join(BASE_DIR, 'assets', 'icon.png')
         self.db = Database(self.db_path())
         self.set_theme(self.config.get('ui', 'theme'))
+        self.apply_lang(os.environ.get('PSYCHONOTES_LANG') or self.config.get('ui', 'lang') or system_lang())
         self.stack = []
         self.sheen = sheen_texture()
         self.grain = grain_texture()
@@ -750,6 +784,24 @@ class PsychoNotesApp(App):
         self.config.set('ui', 'theme', name)
         self.config.write()
 
+    def apply_lang(self, code):
+        code = i18n.set_lang(code)
+        if code in i18n.CJK and CJK_FONT:
+            LabelBase.register(DEFAULT_FONT, CJK_FONT)
+        else:
+            LabelBase.register(DEFAULT_FONT, *ROBOTO)
+        return code
+
+    def set_lang(self, code):
+        """Switch language live: kv text is evaluated once, so the whole widget tree is rebuilt."""
+        self.config.set('ui', 'lang', self.apply_lang(code))
+        self.config.write()
+        Window.remove_widget(self.root)
+        self.root = Root()
+        Window.add_widget(self.root)
+        self.stack.clear()
+        self.go('settings')
+
     # navigation: tabs reset the stack, everything else pushes onto it
     def go(self, name, **kw):
         sm = self.root.ids.sm
@@ -767,8 +819,8 @@ class PsychoNotesApp(App):
             return False
         screen = self.root.ids.sm.current_screen
         if not force and isinstance(screen, FormPage) and screen.is_dirty():
-            self.confirm('Выйти без сохранения?', 'Внесённые изменения будут потеряны.',
-                         lambda: self.back(force=True), ok_text='Выйти')
+            self.confirm(tr('Выйти без сохранения?'), tr('Внесённые изменения будут потеряны.'),
+                         lambda: self.back(force=True), ok_text=tr('Выйти'))
             return True
         self.root.ids.sm.transition = SlideTransition(direction='right', duration=.18)
         self._show(*self.stack.pop())
@@ -792,8 +844,23 @@ class PsychoNotesApp(App):
     def toast(self, text):
         self.root.toast(text)
 
-    def confirm(self, title, text, on_ok, ok_text='Удалить'):
-        Dialog(title=title, text=text, callback=on_ok, ok_text=ok_text, danger=ok_text == 'Удалить').open()
+    def confirm(self, title, text, on_ok, ok_text=None, danger=None):
+        Dialog(title=title, text=text, callback=on_ok, ok_text=ok_text or tr('Удалить'),
+               danger=ok_text is None if danger is None else danger).open()
+
+
+def system_lang():
+    try:
+        if platform == 'android':
+            from jnius import autoclass
+            code = autoclass('java.util.Locale').getDefault().getLanguage()
+        else:
+            import locale
+            code = locale.getlocale()[0] or os.environ.get('LANG', '')
+    except Exception:
+        code = ''
+    code = code[:2].lower()
+    return code if code in LANGS else 'en'
 
 
 if __name__ == '__main__':

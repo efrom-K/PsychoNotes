@@ -12,6 +12,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 TMP = tempfile.mkdtemp()
 os.environ['PSYCHONOTES_DB'] = os.path.join(TMP, 'smoke.db')
+os.environ['PSYCHONOTES_LANG'] = 'ru'  # the flows below look for Russian labels
 
 from main import ClientPicker, DatePicker, Dialog, PsychoNotesApp  # noqa: E402  (first: configures the window)
 from kivy.clock import Clock  # noqa: E402
@@ -54,7 +55,7 @@ class Smoke(PsychoNotesApp):
                       self.pick_date_and_save, self.open_client_picker, self.create_client_inline,
                       self.backup_then_delete, self.confirm_delete, self.open_restore,
                       self.pick_backup, self.confirm_restore, self.empty_home,
-                      self.tap_demo_button]
+                      self.tap_demo_button, self.switch_language, self.tour_languages]
         Clock.schedule_once(self.run_next, .5)
 
     def run_next(self, _dt=None):
@@ -175,6 +176,28 @@ class Smoke(PsychoNotesApp):
         btn = next(w for w in self.screen().walk() if getattr(w, 'text', '') == 'Посмотреть на демо-данных')
         Tap(*btn.to_window(*btn.center))()
         assert self.db.clients(), 'tap on the demo button did nothing'
+
+    def switch_language(self):
+        self.go('settings')
+        self.screen().ids.lang.value = 'English'  # as a chip tap does; the switch itself is deferred
+
+    def tour_languages(self):
+        import i18n
+        assert i18n.lang == 'en' and self.root.ids.sm.current == 'settings'
+        assert self.config.get('ui', 'lang') == 'en'
+        assert any(getattr(w, 'text', '') == 'Settings' for w in self.root.walk()), 'UI not rebuilt in English'
+        note = self.db.notes()[0]
+        for code in i18n.LANGS:  # every screen renders in every language (catches template/format errors)
+            self.set_lang(code)
+            for name, kw in (('home', {}), ('clients', {}), ('history', {}), ('settings', {}),
+                             ('client', {'client_id': note['client_id']}), ('session', {'note_id': note['note_id']}),
+                             ('session_form', {'note_id': note['note_id']}), ('client_form', {})):
+                self.go(name, **kw)
+                if name == 'client':
+                    self.screen().ids.chart.selected = 0  # tooltip text
+            DatePicker(callback=print).show(note['meeting_date'])
+            modals()[0].dismiss(animation=False)
+        self.set_lang('ru')
 
 
 if __name__ == '__main__':

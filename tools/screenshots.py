@@ -7,6 +7,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 OUT = os.path.abspath(sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT, 'docs', 'screenshots'))
 os.environ['PSYCHONOTES_DB'] = os.path.join(tempfile.mkdtemp(), 'demo.db')
+os.environ.setdefault('PSYCHONOTES_LANG', 'ru')  # PSYCHONOTES_LANG=en python tools/screenshots.py out/ for another
 
 from main import PsychoNotesApp  # noqa: E402  (first: it configures the window size)
 import demo  # noqa: E402

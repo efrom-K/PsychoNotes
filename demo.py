@@ -1,5 +1,8 @@
-"""Fictional sample data, so the app can be explored without entering anything."""
+"""Fictional sample data, so the app can be explored without entering anything.
+Free text is translated into the current language when seeded; option values stay untranslated keys."""
 from datetime import date, timedelta
+
+from i18n import tr
 
 CLIENTS = [
     dict(full_name='Анна Соколова', age=29, phone_number='+7 900 123-45-67', temperament='Меланхолик',
@@ -32,12 +35,15 @@ TECHNIQUES = ['Дыхание 4-7-8, когнитивное реструктур
 OUTCOMES = ['Клиент сформулировал ресурсные убеждения', 'Снижение напряжения к концу сессии',
             'Найдена связь между триггером и реакцией', 'Договорились о домашнем задании',
             'Появился план действий на неделю']
+OPTIONS = ('temperament', 'perception_type')  # option keys, stored untranslated like the form stores them
 WEATHER = ['Ясно', 'Облачно', 'Дождь', 'Снег', 'Ветрено']
 
 
 def seed(db, today=None):
     today = today or date.today()
     for i, c in enumerate(CLIENTS):
+        c = {k: v if k in OPTIONS else [tr(r) for r in v] if k == 'requests' else tr(v) if isinstance(v, str) else v
+             for k, v in c.items()}
         cid = db.save_client(c)
         sessions = 7 - i
         for k in range(sessions):
@@ -45,19 +51,19 @@ def seed(db, today=None):
             before = min(9, 2 + k // 2 + i % 2)
             db.save_note(dict(
                 client_id=cid, meeting_date=day.isoformat(), meeting_time=f'{10 + i * 2}:00',
-                meeting_location='Онлайн' if (k + i) % 3 == 0 else 'Кабинет',
+                meeting_location=tr('Онлайн') if (k + i) % 3 == 0 else tr('Кабинет'),
                 weather=WEATHER[(k + i) % len(WEATHER)],
-                initial_state='Напряжение, усталость' if before < 5 else 'Спокойнее, чем обычно',
+                initial_state=tr('Напряжение, усталость') if before < 5 else tr('Спокойнее, чем обычно'),
                 initial_state_score=before, request=c['requests'][k % len(c['requests'])],
-                meeting_progress='Обсудили события недели, разобрали ключевую ситуацию.',
-                techniques_used=TECHNIQUES[(k + i) % len(TECHNIQUES)],
-                meeting_outcome=OUTCOMES[(k * 2 + i) % len(OUTCOMES)],
-                final_state='Легче, появилась ясность', final_state_score=min(10, before + 2 + k % 2)))
+                meeting_progress=tr('Обсудили события недели, разобрали ключевую ситуацию.'),
+                techniques_used=tr(TECHNIQUES[(k + i) % len(TECHNIQUES)]),
+                meeting_outcome=tr(OUTCOMES[(k * 2 + i) % len(OUTCOMES)]),
+                final_state=tr('Легче, появилась ясность'), final_state_score=min(10, before + 2 + k % 2)))
         if i == 2:  # yesterday's session, not written up yet
             db.save_note(dict(client_id=cid, meeting_date=(today - timedelta(days=1)).isoformat(),
-                              meeting_time='17:00', meeting_location='Кабинет', initial_state='Усталость',
+                              meeting_time='17:00', meeting_location=tr('Кабинет'), initial_state=tr('Усталость'),
                               initial_state_score=4, request=c['requests'][0]))
         if i < 2:  # an upcoming appointment
             db.save_note(dict(client_id=cid, meeting_date=(today + timedelta(days=i + 1)).isoformat(),
-                              meeting_time=f'{11 + i * 3}:30', meeting_location='Кабинет',
+                              meeting_time=f'{11 + i * 3}:30', meeting_location=tr('Кабинет'),
                               request=c['requests'][0]))

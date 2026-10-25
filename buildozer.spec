@@ -3,10 +3,10 @@ title = PsychoNotes
 package.name = psychonotes
 package.domain = io.github.efrom_k
 source.dir = .
-source.include_exts = py,kv,otf,png
-source.exclude_dirs = tools,docs,.venv,bin,.buildozer
+source.include_exts = py,kv,otf,png,json
+source.exclude_dirs = tools,docs,.venv,.venv-build,bin,.buildozer
 source.exclude_patterns = test_*.py
-version = 2.0.0
+version = 2.1.0
 requirements = python3,kivy==2.3.1
 icon.filename = %(source.dir)s/assets/icon.png
 orientation = portrait

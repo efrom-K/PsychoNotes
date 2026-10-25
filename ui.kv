@@ -1,8 +1,10 @@
 #:import Window kivy.core.window.Window
 #:import human_date fmt.human_date
 #:import initials fmt.initials
+#:import tr i18n.tr
+#:import LANGS i18n.LANGS
 #:set ICON_FONT 'assets/icons.otf'
-#:set I {'home': '', 'group': '', 'history': '', 'settings': '', 'add': '', 'back': '', 'edit': '', 'delete': '', 'search': '', 'calendar': '', 'left': '', 'right': '', 'close': '', 'dark': '', 'light': '', 'event': '', 'person': '', 'place': '', 'restore': '', 'schedule': '', 'table': '', 'trend': '', 'sun': '', 'psychology': '', 'calm': '', 'insights': '', 'backup': '', 'sparkle': '', 'check': ''}
+#:set I {'home': '', 'group': '', 'history': '', 'settings': '', 'add': '', 'back': '', 'edit': '', 'delete': '', 'search': '', 'calendar': '', 'left': '', 'right': '', 'close': '', 'dark': '', 'light': '', 'event': '', 'person': '', 'place': '', 'restore': '', 'schedule': '', 'table': '', 'trend': '', 'sun': '', 'psychology': '', 'calm': '', 'insights': '', 'backup': '', 'sparkle': '', 'check': '', 'language': ''}
 #:set MAXW dp(720)
 
 
@@ -483,13 +485,13 @@
     size_hint_y: None
     height: dp(18)
     Label:
-        text: 'плохо'
+        text: tr('плохо')
         color: app.muted
         font_size: sp(12)
         text_size: self.size
         halign: 'left'
     Label:
-        text: 'отлично'
+        text: tr('отлично')
         color: app.muted
         font_size: sp(12)
         text_size: self.size
@@ -637,7 +639,7 @@
     spacing: dp(6)
     Field:
         id: field
-        hint_text: 'Например: тревога на работе'
+        hint_text: tr('Например: тревога на работе')
     IconBtn:
         id: remove_btn
         icon: 'close'
@@ -737,19 +739,19 @@
     padding: dp(6), 0
     NavItem:
         icon: 'home'
-        text: 'Главная'
+        text: tr('Главная')
         target: 'home'
     NavItem:
         icon: 'group'
-        text: 'Клиенты'
+        text: tr('Клиенты')
         target: 'clients'
     NavItem:
         icon: 'history'
-        text: 'История'
+        text: tr('История')
         target: 'history'
     NavItem:
         icon: 'settings'
-        text: 'Настройки'
+        text: tr('Настройки')
         target: 'settings'
 
 <TopBar@BoxLayout>:
@@ -840,7 +842,7 @@
             height: dp(50)
             spacing: dp(10)
             Btn:
-                text: 'Отмена'
+                text: tr('Отмена')
                 bg: app.surface2
                 fg: app.text
                 height: dp(50)
@@ -862,12 +864,12 @@
     overlay_color: 0, 0, 0, .35
     ModalCard:
         Text:
-            text: 'Выберите клиента'
+            text: tr('Выберите клиента')
             bold: True
             font_size: sp(19)
         Field:
             id: query
-            hint_text: 'Поиск или имя нового клиента'
+            hint_text: tr('Поиск или имя нового клиента')
             on_text: root.search(self.text)
         Scroller:
             List:
@@ -881,11 +883,11 @@
     overlay_color: 0, 0, 0, .35
     ModalCard:
         Text:
-            text: 'Резервные копии'
+            text: tr('Резервные копии')
             bold: True
             font_size: sp(19)
         Muted:
-            text: 'Новые сверху. Текущие данные будут заменены.'
+            text: tr('Новые сверху. Текущие данные будут заменены.')
         Scroller:
             List:
                 id: list
@@ -936,19 +938,19 @@
             size_hint_y: None
             height: dp(24)
             WeekdayLabel:
-                text: 'Пн'
+                text: tr('Пн')
             WeekdayLabel:
-                text: 'Вт'
+                text: tr('Вт')
             WeekdayLabel:
-                text: 'Ср'
+                text: tr('Ср')
             WeekdayLabel:
-                text: 'Чт'
+                text: tr('Чт')
             WeekdayLabel:
-                text: 'Пт'
+                text: tr('Пт')
             WeekdayLabel:
-                text: 'Сб'
+                text: tr('Сб')
             WeekdayLabel:
-                text: 'Вс'
+                text: tr('Вс')
         GridLayout:
             id: grid
             cols: 7
@@ -984,20 +986,20 @@
                     text_size: self.size
                     halign: 'left'
                 Text:
-                    text: 'Добро пожаловать в PsychoNotes'
+                    text: tr('Добро пожаловать в PsychoNotes')
                     bold: True
                     font_size: sp(20)
                 Muted:
-                    text: 'Карточки клиентов и записи сессий в одном месте. Данные хранятся только на этом устройстве.'
+                    text: tr('Карточки клиентов и записи сессий в одном месте. Данные хранятся только на этом устройстве.')
                     font_size: sp(15)
                 Spacer:
                 Btn:
                     icon: 'add'
-                    text: 'Добавить первого клиента'
+                    text: tr('Добавить первого клиента')
                     on_release: app.go('client_form')
                 SoftBtn:
                     icon: 'sparkle'
-                    text: 'Посмотреть на демо-данных'
+                    text: tr('Посмотреть на демо-данных')
                     on_release: root.load_demo()
 
             # the one thing that matters most: the next appointment
@@ -1018,7 +1020,7 @@
                         font_size: sp(18)
                         size: dp(20), dp(20)
                     Cell:
-                        text: 'Следующая встреча'
+                        text: tr('Следующая встреча')
                         color: app.accent
                         bold: True
                         font_size: sp(14)
@@ -1041,12 +1043,12 @@
                             text: root.next.get('full_name') or ''
                             bold: True
                         Cell:
-                            text: root.next.get('request') or 'Запрос не указан'
+                            text: root.next.get('request') or tr('Запрос не указан')
                             color: app.muted
                             font_size: sp(14)
                 Btn:
                     icon: 'edit'
-                    text: 'Открыть запись встречи'
+                    text: tr('Открыть запись встречи')
                     on_release: app.go('session_form', note_id=root.next['note_id'])
 
             GridLayout:
@@ -1066,25 +1068,25 @@
                     label: root.stat_labels[2]
 
             SectionTitle:
-                text: 'Нужно заполнить' if todo.children else ''
+                text: tr('Нужно заполнить') if todo.children else ''
                 height: self.texture_size[1] if todo.children else 0
             Muted:
-                text: 'Прошедшие встречи без итога или оценки состояния' if todo.children else ''
+                text: tr('Прошедшие встречи без итога или оценки состояния') if todo.children else ''
                 height: self.texture_size[1] if todo.children else 0
             List:
                 id: todo
             SectionTitle:
-                text: 'Дальше по расписанию' if upcoming.children else ''
+                text: tr('Дальше по расписанию') if upcoming.children else ''
                 height: self.texture_size[1] if upcoming.children else 0
             List:
                 id: upcoming
             SectionTitle:
-                text: 'Недавние сессии' if recent.children else ''
+                text: tr('Недавние сессии') if recent.children else ''
                 height: self.texture_size[1] if recent.children else 0
             List:
                 id: recent
     Fab:
-        text: 'Сессия'
+        text: tr('Сессия')
         opacity: 0 if root.empty else 1
         disabled: root.empty
         on_release: app.go('session_form')
@@ -1094,10 +1096,10 @@
         orientation: 'vertical'
         Header:
             Heading:
-                text: 'Клиенты'
+                text: tr('Клиенты')
             SearchField:
                 id: query
-                hint: 'Поиск по имени'
+                hint: tr('Поиск по имени')
                 on_text: root.refresh()
         RecycleView:
             id: rv
@@ -1115,12 +1117,12 @@
                 spacing: dp(10)
                 padding: max(dp(16), (self.width - MAXW) / 2), dp(4), max(dp(16), (self.width - MAXW) / 2), dp(170)
     Muted:
-        text: ('Ничего не найдено' if query.text else 'Пока нет клиентов.\nНажмите «Клиент», чтобы добавить первого.') if not rv.data else ''
+        text: (tr('Ничего не найдено') if query.text else tr('Пока нет клиентов.\nНажмите «Клиент», чтобы добавить первого.')) if not rv.data else ''
         halign: 'center'
         font_size: sp(16)
         pos_hint: {'center_y': .5}
     Fab:
-        text: 'Клиент'
+        text: tr('Клиент')
         on_release: app.go('client_form')
 
 <HistoryScreen>:
@@ -1128,10 +1130,10 @@
         orientation: 'vertical'
         Header:
             Heading:
-                text: 'История'
+                text: tr('История')
             SearchField:
                 id: query
-                hint: 'Клиент, запрос, техника…'
+                hint: tr('Клиент, запрос, техника…')
                 on_text: root.refresh()
         RecycleView:
             id: rv
@@ -1149,12 +1151,12 @@
                 spacing: dp(10)
                 padding: max(dp(16), (self.width - MAXW) / 2), 0, max(dp(16), (self.width - MAXW) / 2), dp(170)
     Muted:
-        text: ('Ничего не найдено' if query.text else 'Сессий пока нет') if not rv.data else ''
+        text: (tr('Ничего не найдено') if query.text else tr('Сессий пока нет')) if not rv.data else ''
         halign: 'center'
         font_size: sp(16)
         pos_hint: {'center_y': .5}
     Fab:
-        text: 'Сессия'
+        text: tr('Сессия')
         on_release: app.go('session_form')
 
 <SettingsScreen>:
@@ -1163,65 +1165,73 @@
             Spacer:
                 height: dp(16)
             Heading:
-                text: 'Настройки'
+                text: tr('Настройки')
             Card:
                 CardTitle:
                     icon: 'light'
-                    text: 'Оформление'
+                    text: tr('Оформление')
                 BoxLayout:
                     size_hint_y: None
                     height: dp(50)
                     spacing: dp(8)
                     Btn:
                         icon: 'light'
-                        text: 'Светлая'
+                        text: tr('Светлая')
                         height: dp(50)
                         bg: app.accent_fill if app.theme == 'light' else app.surface2
                         fg: app.ink if app.theme == 'light' else app.text
                         on_release: app.set_theme('light')
                     Btn:
                         icon: 'dark'
-                        text: 'Тёмная'
+                        text: tr('Тёмная')
                         height: dp(50)
                         bg: app.accent_fill if app.theme == 'dark' else app.surface2
                         fg: app.ink if app.theme == 'dark' else app.text
                         on_release: app.set_theme('dark')
             Card:
                 CardTitle:
+                    icon: 'language'
+                    text: tr('Язык')
+                ChipGroup:
+                    id: lang
+                    options: list(LANGS.values())
+                    on_value: root.set_lang(self.value)
+            Card:
+                CardTitle:
                     icon: 'backup'
-                    text: 'Резервные копии'
+                    text: tr('Резервные копии')
                 Muted:
-                    text: 'Данные хранятся только на этом устройстве. Делайте копию регулярно — например, раз в неделю.'
+                    text: tr('Данные хранятся только на этом устройстве. Делайте копию регулярно — например, раз в неделю.')
                 Muted:
-                    text: root.info + '\nПапка: ' + root.folder
+                    text: root.info + '\n' + tr('Папка: {path}', path=root.folder)
                     font_size: sp(13)
                 Btn:
                     icon: 'backup'
-                    text: 'Создать копию'
+                    text: tr('Создать копию')
                     on_release: root.export_json()
                 SoftBtn:
                     icon: 'restore'
-                    text: 'Восстановить из копии'
+                    text: tr('Восстановить из копии')
                     on_release: root.import_json()
                 SoftBtn:
                     icon: 'table'
-                    text: 'Экспорт сессий в Excel (CSV)'
+                    text: tr('Экспорт сессий в Excel (CSV)')
                     on_release: root.export_csv()
             Card:
                 SoftBtn:
                     icon: 'sparkle'
-                    text: 'Добавить демо-данные'
+                    text: tr('Добавить демо-данные')
                     on_release: root.load_demo()
                 DangerBtn:
                     icon: 'delete'
-                    text: 'Удалить все данные'
+                    text: tr('Удалить все данные')
                     on_release: root.wipe()
             Card:
                 Text:
-                    text: 'PsychoNotes 2.0'
+                    text: 'PsychoNotes 2.1'
                     bold: True
                 Muted:
-                    text: 'Рабочий журнал психолога: клиенты, сессии, динамика состояния. Работает офлайн, без регистрации.'
+                    text: tr('Рабочий журнал психолога: клиенты, сессии, динамика состояния. Работает офлайн, без регистрации.')
 
 <ClientScreen>:
     BoxLayout:
@@ -1279,13 +1289,13 @@
                         font_size: sp(15)
                 Btn:
                     icon: 'add'
-                    text: 'Новая сессия'
+                    text: tr('Новая сессия')
                     on_release: app.go('session_form', client_id=root.kw['client_id'])
                 Card:
                     height: self.minimum_height if requests.children else 0
                     opacity: 1 if requests.children else 0
                     Muted:
-                        text: 'Запросы'
+                        text: tr('Запросы')
                         bold: True
                     TagBox:
                         id: requests
@@ -1297,19 +1307,19 @@
                         height: dp(24)
                         spacing: dp(6)
                         Cell:
-                            text: 'Динамика состояния'
+                            text: tr('Динамика состояния')
                             bold: True
                         LegendDot:
                             c: app.series_before
                         LegendLabel:
-                            text: 'до'
+                            text: tr('до')
                         Widget:
                             size_hint_x: None
                             width: dp(6)
                         LegendDot:
                             c: app.series_after
                         LegendLabel:
-                            text: 'после'
+                            text: tr('после')
                     Text:
                         text: root.progress_text
                         color: app.accent
@@ -1320,13 +1330,13 @@
                         size_hint_y: None
                         height: dp(190)
                     Muted:
-                        text: 'Самооценка клиента 0–10 в начале и в конце сессии. Нажмите на точку, чтобы увидеть значения.'
+                        text: tr('Самооценка клиента 0–10 в начале и в конце сессии. Нажмите на точку, чтобы увидеть значения.')
                         font_size: sp(13)
                 InfoCard:
-                    title: 'Анамнез'
+                    title: tr('Анамнез')
                     text: root.client.get('anamnesis') or ''
                 InfoCard:
-                    title: 'План помощи'
+                    title: tr('План помощи')
                     text: root.client.get('help_plan') or ''
                 SectionTitle:
                     id: sessions_title
@@ -1337,84 +1347,84 @@
     BoxLayout:
         orientation: 'vertical'
         TopBar:
-            title: 'Редактирование клиента' if root.editing else 'Новый клиент'
+            title: tr('Редактирование клиента') if root.editing else tr('Новый клиент')
         Scroller:
             id: scroll
             Content:
                 Step:
                     num: '1'
-                    title: 'Основное'
+                    title: tr('Основное')
                     Labeled:
-                        label: 'Имя и фамилия *'
+                        label: tr('Имя и фамилия *')
                         Field:
                             id: name
-                            hint_text: 'Анна Соколова'
+                            hint_text: tr('Анна Соколова')
                     BoxLayout:
                         size_hint_y: None
                         height: self.minimum_height
                         spacing: dp(12)
                         Labeled:
-                            label: 'Возраст'
+                            label: tr('Возраст')
                             size_hint_x: .35
                             Field:
                                 id: age
                                 input_filter: 'int'
                                 hint_text: '30'
                         Labeled:
-                            label: 'Телефон'
+                            label: tr('Телефон')
                             Field:
                                 id: phone
                                 input_type: 'tel'
                                 hint_text: '+7 900 000-00-00'
                 Step:
                     num: '2'
-                    title: 'С чем обратился'
-                    hint: 'Каждый запрос — отдельной строкой. Они станут подсказками при записи сессии.'
+                    title: tr('С чем обратился')
+                    hint: tr('Каждый запрос — отдельной строкой. Они станут подсказками при записи сессии.')
                     List:
                         id: requests
                     GhostBtn:
                         icon: 'add'
-                        text: 'Добавить запрос'
+                        text: tr('Добавить запрос')
                         on_release: root.add_request().ids.field.focus = True
                 Step:
                     num: '3'
-                    title: 'Психологический профиль'
-                    hint: 'Необязательно. Можно заполнить позже.'
+                    title: tr('Психологический профиль')
+                    hint: tr('Необязательно. Можно заполнить позже.')
                     Labeled:
-                        label: 'Темперамент'
+                        label: tr('Темперамент')
                         ChipGroup:
                             id: temperament
                             options: ['Сангвиник', 'Холерик', 'Флегматик', 'Меланхолик']
                     Labeled:
-                        label: 'Ведущая модальность восприятия'
+                        label: tr('Ведущая модальность восприятия')
                         ChipGroup:
                             id: perception
                             options: ['Визуал', 'Аудиал', 'Кинестетик', 'Дигитал']
                     Labeled:
-                        label: 'Тип характера'
+                        label: tr('Тип характера')
                         Field:
                             id: character
-                            hint_text: 'Например: тревожно-мнительный'
+                            hint_text: tr('Например: тревожно-мнительный')
                 Step:
                     num: '4'
-                    title: 'Анамнез и план'
+                    title: tr('Анамнез и план')
                     Labeled:
-                        label: 'Анамнез'
+                        label: tr('Анамнез')
                         Area:
                             id: anamnesis
-                            hint_text: 'История обращения, значимые события, состояние здоровья…'
+                            hint_text: tr('История обращения, значимые события, состояние здоровья…')
                     Labeled:
-                        label: 'План помощи'
+                        label: tr('План помощи')
                         Area:
                             id: plan
-                            hint_text: 'Цели и этапы работы'
+                            hint_text: tr('Цели и этапы работы')
                 Btn:
                     icon: 'check'
-                    text: 'Сохранить'
+                    text: tr('Сохранить')
                     on_release: root.save()
                 DangerBtn:
                     icon: 'delete'
-                    text: 'Удалить клиента'
+                    text: tr('Удалить клиента')
                     height: dp(52) if root.editing else 0
                     opacity: 1 if root.editing else 0
                     disabled: not root.editing
@@ -1424,7 +1434,7 @@
     BoxLayout:
         orientation: 'vertical'
         TopBar:
-            title: 'Сессия'
+            title: tr('Сессия')
             IconBtn:
                 icon: 'edit'
                 on_release: app.go('session_form', note_id=root.kw['note_id'])
@@ -1437,9 +1447,9 @@
                     subtitle: root.when
                 TagBox:
                     Tag:
-                        text: root.note.get('meeting_location') or ''
+                        text: tr(root.note.get('meeting_location') or '')
                     Tag:
-                        text: root.note.get('weather') or ''
+                        text: tr(root.note.get('weather') or '')
                 # reminder for an unfinished write-up
                 Card:
                     fill: app.warn_soft
@@ -1447,14 +1457,14 @@
                     opacity: 0 if root.complete else 1
                     disabled: root.complete
                     Text:
-                        text: 'Запись не завершена'
+                        text: tr('Запись не завершена')
                         bold: True
                     Text:
-                        text: 'Добавьте итог встречи и оценку состояния в конце — так будет видна динамика клиента.'
+                        text: tr('Добавьте итог встречи и оценку состояния в конце — так будет видна динамика клиента.')
                         font_size: sp(14)
                     Btn:
                         icon: 'edit'
-                        text: 'Заполнить итоги'
+                        text: tr('Заполнить итоги')
                         bg: app.surface
                         fg: app.text
                         on_release: app.go('session_form', note_id=root.kw['note_id'])
@@ -1476,12 +1486,12 @@
                         size_hint_y: None
                         height: self.minimum_height
                         ScoreBox:
-                            label: 'В начале'
+                            label: tr('В начале')
                             c: app.series_before
                             score: '—' if root.note.get('initial_state_score') is None else f"{root.note['initial_state_score']}/10"
                             note: root.note.get('initial_state') or ''
                         ScoreBox:
-                            label: 'В конце'
+                            label: tr('В конце')
                             c: app.series_after
                             score: '—' if root.note.get('final_state_score') is None else f"{root.note['final_state_score']}/10"
                             note: root.note.get('final_state') or ''
@@ -1493,18 +1503,18 @@
     BoxLayout:
         orientation: 'vertical'
         TopBar:
-            title: 'Редактирование сессии' if root.editing else 'Новая сессия'
+            title: tr('Редактирование сессии') if root.editing else tr('Новая сессия')
         Scroller:
             id: scroll
             Content:
                 Step:
                     num: '1'
-                    title: 'Встреча'
+                    title: tr('Встреча')
                     Labeled:
-                        label: 'Клиент *'
+                        label: tr('Клиент *')
                         SelectBox:
                             icon: 'person'
-                            text: root.client_name or 'Выбрать клиента'
+                            text: root.client_name or tr('Выбрать клиента')
                             placeholder: not root.client_name
                             on_release: root.pick_client()
                     GridLayout:
@@ -1513,89 +1523,89 @@
                         size_hint_y: None
                         height: self.minimum_height
                         Labeled:
-                            label: 'Дата'
+                            label: tr('Дата')
                             SelectBox:
                                 icon: 'calendar'
                                 text: human_date(root.meeting_date, weekday=True)
                                 on_release: root.pick_date()
                         Labeled:
-                            label: 'Время'
+                            label: tr('Время')
                             Field:
                                 id: time
-                                hint_text: 'ЧЧ:ММ'
+                                hint_text: tr('ЧЧ:ММ')
                                 input_filter: lambda text, undo: ''.join(ch for ch in text if ch.isdigit() or ch == ':')
                     Labeled:
-                        label: 'Место'
+                        label: tr('Место')
                         Field:
                             id: location
-                            hint_text: 'Где проходит встреча'
+                            hint_text: tr('Где проходит встреча')
                         ChipGroup:
                             id: location_chips
                             value: location.text
                             on_value: location.text = self.value
                     Labeled:
-                        label: 'Погода'
+                        label: tr('Погода')
                         ChipGroup:
                             id: weather
                             options: ['Ясно', 'Облачно', 'Дождь', 'Снег', 'Ветрено']
                 Step:
                     num: '2'
-                    title: 'В начале'
-                    hint: 'С чем пришёл клиент и как он себя чувствует.'
+                    title: tr('В начале')
+                    hint: tr('С чем пришёл клиент и как он себя чувствует.')
                     Labeled:
-                        label: 'Запрос на сессию'
+                        label: tr('Запрос на сессию')
                         Field:
                             id: request
-                            hint_text: 'Своими словами клиента'
+                            hint_text: tr('Своими словами клиента')
                         ChipGroup:
                             id: request_chips
                             value: request.text
                             on_value: request.text = self.value
                     Labeled:
-                        label: 'Состояние'
+                        label: tr('Состояние')
                         Area:
                             id: initial_state
-                            hint_text: 'Как клиент описывает своё состояние'
+                            hint_text: tr('Как клиент описывает своё состояние')
                     Labeled:
-                        label: 'Оценка состояния'
+                        label: tr('Оценка состояния')
                         ScoreSelector:
                             id: before
                         ScaleHints:
                 Step:
                     num: '3'
-                    title: 'Работа'
+                    title: tr('Работа')
                     Labeled:
-                        label: 'Ход встречи'
+                        label: tr('Ход встречи')
                         Area:
                             id: progress
                     Labeled:
-                        label: 'Техники'
+                        label: tr('Техники')
                         Area:
                             id: techniques
                 Step:
                     num: '4'
-                    title: 'Итог'
-                    hint: 'Заполните после встречи — это главное для отслеживания динамики.'
+                    title: tr('Итог')
+                    hint: tr('Заполните после встречи — это главное для отслеживания динамики.')
                     Labeled:
-                        label: 'Итог встречи'
+                        label: tr('Итог встречи')
                         Area:
                             id: outcome
                     Labeled:
-                        label: 'Состояние в конце'
+                        label: tr('Состояние в конце')
                         Area:
                             id: final_state
                     Labeled:
-                        label: 'Оценка состояния'
+                        label: tr('Оценка состояния')
                         ScoreSelector:
                             id: after
                         ScaleHints:
                 Btn:
                     icon: 'check'
-                    text: 'Сохранить'
+                    text: tr('Сохранить')
                     on_release: root.save()
                 DangerBtn:
                     icon: 'delete'
-                    text: 'Удалить сессию'
+                    text: tr('Удалить сессию')
                     height: dp(52) if root.editing else 0
                     opacity: 1 if root.editing else 0
                     disabled: not root.editing
